@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="author_homepage_open_failed">无法打开 B 站主页，请确认设备有可用的浏览器或哔哩哔哩应用。</string>
+</resources>

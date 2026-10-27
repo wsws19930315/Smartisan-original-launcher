@@ -218,6 +218,11 @@ public final class LauncherColdReloadCoordinator {
         });
     }
 
+    static boolean ownsInitializationLoadingWindow() {
+        // Preserve the opaque cover prepared for a coordinated process reload.
+        return sInitialLoadingWindowApplied;
+    }
+
     /** Armed only by J's exact R.string.initializing path, never by generic LoadingUI. */
     public static void armInitializationLoadingWindow() {
         String token = sReloadToken != null ? sReloadToken : sExpectedLauncherToken;
@@ -423,9 +428,8 @@ public final class LauncherColdReloadCoordinator {
 
     private static void startLauncher(Context context, String token, String reason, int gridMode,
             String themeMode) {
-        Intent launcher = new Intent(Intent.ACTION_MAIN);
-        launcher.addCategory(Intent.CATEGORY_HOME);
-        launcher.setClassName(context.getPackageName(), "com.smartisanos.launcher.Launcher");
+        Intent launcher = com.smartisanos.launcher.gesture.LauncherHomeCompat
+                .createLauncherHomeIntent(context);
         // Launcher is singleTask and the old process has already been ended by
         // the opaque transition activity. CLEAR_TASK is deliberately unsafe
         // here: on several ROMs it also trims the still-waiting :reload task,

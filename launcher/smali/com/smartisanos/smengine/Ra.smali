@@ -1364,7 +1364,7 @@
 
 # virtual methods
 .method public T(F)V
-    .locals 2
+    .locals 4
 
     .line 1
     iget-boolean v0, p0, Lcom/smartisanos/smengine/Ra;->DU:Z
@@ -1375,6 +1375,14 @@
 
     .line 2
     :cond_0
+    # Snapshot before input callbacks can create a Folder in this engine tick.
+    invoke-static {}, Lcom/smartisanos/launcher/view/Eb;->getInstance()Lcom/smartisanos/launcher/view/Eb;
+    move-result-object v2
+    if-eqz v2, :folder_creation_snapshot_done
+    invoke-virtual {v2}, Lcom/smartisanos/launcher/view/Eb;->Ch()Lcom/smartisanos/launcher/view/b/t;
+    move-result-object v2
+    :folder_creation_snapshot_done
+
     iget-object v0, p0, Lcom/smartisanos/smengine/Ra;->CU:Lcom/smartisanos/smengine/La;
 
     if-eqz v0, :cond_1
@@ -1394,9 +1402,25 @@
     invoke-virtual {v0, p1}, Lcom/smartisanos/smengine/p;->update(F)V
 
     .line 6
+    # A new Folder missed Eb.update's pre-input transition gate. Only its
+    # animation-manager step is normalized; input/events retain their delta.
+    move v1, p1
+    invoke-static {}, Lcom/smartisanos/launcher/view/Eb;->getInstance()Lcom/smartisanos/launcher/view/Eb;
+    move-result-object v3
+    if-eqz v3, :folder_creation_delta_done
+    invoke-virtual {v3}, Lcom/smartisanos/launcher/view/Eb;->Ch()Lcom/smartisanos/launcher/view/b/t;
+    move-result-object v0
+    if-eqz v0, :folder_creation_delta_done
+    if-eq v0, v2, :folder_creation_delta_done
+    invoke-virtual {v0}, Lcom/smartisanos/launcher/view/b/t;->Zr()Z
+    move-result v0
+    if-eqz v0, :folder_creation_delta_done
+    invoke-virtual {v3, p1}, Lcom/smartisanos/launcher/view/Eb;->folderCreationAnimationDelta(F)F
+    move-result v1
+    :folder_creation_delta_done
     iget-object v0, p0, Lcom/smartisanos/smengine/Ra;->uU:Lcom/smartisanos/smengine/d;
 
-    invoke-virtual {v0, p1}, Lcom/smartisanos/smengine/d;->update(F)V
+    invoke-virtual {v0, v1}, Lcom/smartisanos/smengine/d;->update(F)V
 
     .line 7
     iget-boolean v0, p0, Lcom/smartisanos/smengine/Ra;->EU:Z

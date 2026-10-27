@@ -587,9 +587,11 @@ final class QuickDesktopContentView extends View {
         int minY = height;
         int maxX = -1;
         int maxY = -1;
+        int[] row = new int[width];
         for (int y = 0; y < height; y++) {
+            source.getPixels(row, 0, width, 0, y, width, 1);
             for (int x = 0; x < width; x++) {
-                if (Color.alpha(source.getPixel(x, y)) == 0) continue;
+                if (Color.alpha(row[x]) == 0) continue;
                 if (x < minX) minX = x;
                 if (x > maxX) maxX = x;
                 if (y < minY) minY = y;

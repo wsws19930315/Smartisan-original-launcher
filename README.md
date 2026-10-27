@@ -17,8 +17,8 @@
 
 <p align="center">
   <img alt="Android" src="https://img.shields.io/badge/Android-8.0%2B-brightgreen?style=flat-square">
-  <img alt="Version" src="https://img.shields.io/badge/version-v1.5.8-blue?style=flat-square">
-  <img alt="Build" src="https://img.shields.io/badge/build-33-orange?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.6.0--T-orange?style=flat-square">
+  <img alt="Build" src="https://img.shields.io/badge/build-34-orange?style=flat-square">
   <img alt="Status" src="https://img.shields.io/badge/status-active-success?style=flat-square">
 </p>
 
@@ -37,7 +37,7 @@
 
 ## 项目简介
 
-项目文档入口：[docs/INDEX.md](docs/INDEX.md)。
+项目文档入口：[docs/INDEX.md](docs/INDEX.md)。本地维护两个独立项目：Smartisan Launcher 桌面主程序与可选 ROOT HOME 兼容模块。桌面由 `launcher/` 和 `build.bat` 构建，模块由自己的源码和构建入口生成独立 APK；桌面无需安装模块即可运行，桌面更新渠道也不分发模块。模块需兼容 Xposed 框架，尚不是面向所有 ROM 的正式修复版。
 
 **Smartisan Launcher Original Port** 是一个基于原版 Smartisan Launcher 的兼容性移植项目。
 
@@ -49,11 +49,17 @@
 
 ## 当前状态
 
-当前版本：**v1.5.8 / versionCode 33**
+当前版本：**1.6.0-T / versionCode 34（测试版）**
+正式发布时再改为 **1.6.0**，测试构建不会自动去掉 `-T`。
 支持系统：**Android 8.0 及以上**
 测试环境：已在 **Android 12 / Android 15 / Android 16** 环境开展兼容测试。
 
 不同厂商 ROM 在应用分身、后台限制、主题行为、解锁广播和系统入口暴露方式上仍可能存在差异，本项目会持续针对真实设备反馈进行适配。
+
+### 1.6.0-T 测试版更新摘要
+
+* 修复快捷桌面拖到底后松手／取消事件遗漏，并补齐截图失败时的打开状态清理。
+* 保留近期默认图标圆框、HOME 入口及状态栏兼容修复；跨 ROM 和高刷场景继续验证。
 
 ### v1.5.8 更新摘要
 
@@ -175,3 +181,17 @@
 * **内置搜索页**：桌面上滑进入 Launcher 内置原版风格搜索，支持应用名称、拼音、首字母、搜索历史和常用应用；联系人搜索默认关闭，开启后才请求联系人权限。
 * **快捷桌面**：首页右滑进入原版风格快捷桌面，提供天气、搜索、音乐与快捷支付、快捷工具、日历提醒和生活信息固定卡片。
 * **在线更新机制**：通过 Gitee Release 提供更新资源，使用系统下载管理器完成安装。
+
+
+## 版权声明与使用规则
+
+本项目为非官方兼容移植，包含原创贡献、原版 Smartisan 内容与其他第三方内容，不能统一认定为维护者所有或适用同一许可证。具体边界见 [NOTICE](NOTICE.md) 和 [授权审计报告](docs/legal/LICENSING_AUDIT_20261024.md)。
+
+1. **版权归属**：维护者及其他贡献者原创代码、文档、脚本等的权利归相应合法权利人；原版程序、图标、主题、图片、字体、壁纸、第三方代码与商标仍归各自权利人。公开、提取、修改或重签名不等于取得其完整授权。
+2. **个人非商业用途**：维护者拟对有权授权、且经逐项确认的原创部分允许个人学习、技术研究、运行与兼容性测试，以及符合条件的修改和非商业分享；完整条件见 [非商业许可草案](docs/legal/ORIGINAL_NONCOMMERCIAL_LICENSE_DRAFT.md)。**草案尚未生效，当前不构成新许可；须确认权利人、适用文件／片段和生效版本。** 第三方部分始终按自己的有效许可或法律规定处理。
+3. **商业使用边界**：未经相应合法权利人事先书面授权，不得将未获相应用途许可或受非商业条件约束的内容用于收费软件、商业产品、商业预装、品牌定制、商业交付或其他未经许可的商业用途。已经有效适用 MulanPSL-2.0、BSD、Apache 等许可的内容继续享有原许可授予的权利，不追加禁止商用条款。
+4. **修改与再分发**：先确认自己有权转载、修改和分发相关内容，按适用许可保留作者、版权、许可、NOTICE及修改说明。拟议原创许可要求同时注明原项目地址、版本及修改内容；该要求在草案生效前不作为新增许可条件，也不能覆盖第三方既有许可。完整 APK 或素材合集须分别核对组成部分，必要时只分享有权分发的补丁。
+5. **禁止冒名与误导**：不得冒充原作者或官方版本，不得虚构与 Smartisan、锤子科技或其他权利人的授权、合作或背书关系；来源署名不等于获得商标许可。
+6. **第三方授权优先**：图标库已有 [MulanPSL-2.0](https://gitee.com/RANH-F/Smartisan-original-launcher-download/blob/master/LICENSE)，逐图授权链仍需核实。原版代码与素材、其他开源依赖及其派生部分分别遵守实际适用的许可，不能由维护者一概重新授权。“仅供学习”或“非商业”也不能代替第三方许可。
+7. **超范围授权咨询**：对于维护者有权授权的原创部分，可通过 [项目 Issues](https://github.com/RANH-F/Smartisan-original-launcher/issues)联系维护者；其他内容应联系相应合法权利人。已有许可允许的使用无需重新申请。限制商业使用的源码公开许可不属于通常意义上符合 OSI 定义的开源许可。
+8. **使用风险**：软件可能存在兼容性、稳定性及数据丢失风险。除适用法律另有要求或另有书面约定外，不保证适用性、持续维护或无侵权；本声明不排除或限制适用法律规定不得排除或限制的责任，也不变更第三方许可自身条款。

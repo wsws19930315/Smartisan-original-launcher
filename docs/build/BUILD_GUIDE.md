@@ -39,6 +39,8 @@ python -B tools/icon_library.py audit
 
 脚本会自动构建 maintained 设置资源、重新打包 launcher、注入二进制 Manifest、编译 Java 兼容宿主为 `classes2.dex`，最后 zipalign 并签名。
 
+设置资源暂存时，若已有同名 `drawable-xxhdpi-v4/*.9.png`，仅排除 `drawable-xhdpi-v4` 中 `sub_item_back_ground_single`、`sub_item_back_ground_single_disabled`、`sub_item_back_ground_single_highlight` 三个普通 PNG 副本。P10/210dpi 已证实这些副本被选择为 BitmapDrawable，拉伸卡片时会放大边框；使用已有原版 NinePatchDrawable 修复，不修改源图、设置行高、字体或布局。原始参考文件保留；480/640dpi 原生资源配置探针的选图和输出不变，不代表已完成所有手机 UI 回归。
+
 输出文件：
 
 - `build\launcher-signed.apk`：最终可安装桌面 APK。
@@ -155,205 +157,24 @@ python tools\patch_badge_service_manifest.py
 
 脚本会以幂等方式向保留的 AXML 字符串池和 `application` 节点追加 `SmartisanBadgeListenerService`；执行后仍必须通过最终 APK 的 `aapt2 dump xmltree` 验证组件确实存在。
 
-## 版本号写入点
+## 版本号与测试／正式发布
 
-正式改版本或临时降版测试检查更新时，需要同步这三处：
+当前开发测试版本为 **1.6.0-T / versionCode 34**。`-T` 表示测试版；只有明确正式发布时才改为 **1.6.0**，不因构建、安装或局部回归通过自动改成正式版。
 
-当前约定：
-
-- 当前正式版本：`v1.5.4 / 29`。
-- 推荐执行 `python tools/set_launcher_version.py v1.5.4 29` 同步文本 Manifest、设置页字符串和二进制 Manifest，再进行完整构建。
-- 临时降版只能用于检查更新测试；发布构建前必须恢复正式版本，并同步三个版本写入点。
-- 发 GitHub / Gitee Release 前必须恢复正式版本，并用 `aapt2 dump badging build\launcher-signed.apk` 确认最终 APK 元数据；不要只看文本 Manifest。
-
-1. 文本 Manifest：
-
-```text
-launcher\AndroidManifest.xml
-```
-
-示例：
-
-```xml
-android:versionCode="25"
-android:versionName="1.5.0"
-```
-
-2. 设置页“检查更新”右侧显示文本：
-
-```text
-launcher\tools\maintained_settings_res\res\values\strings.xml
-```
-
-字段：
-
-```xml
-<string name="more_current_version_txt">1.5.0</string>
-```
-
-3. 最终注入 APK 的二进制 Manifest：
-
-```text
-launcher\original\AndroidManifest.xml
-```
-
-这里是 Android binary XML / AXML，不是普通文本，不能用普通文本编辑器直接改。
-
-## 二进制 Manifest 改 versionName
-
-二进制 Manifest 的字符串池是 UTF-16LE。等长版本号可以直接替换 UTF-16LE 字节。
-
-例如临时从 `v1.5.0` 降到 `v1.4.9`，两者长度一致，可以这样改：
+使用现有工具一次同步三处，版本名允许变长；不要对二进制 Manifest 使用文本替换或硬编码偏移：
 
 ```powershell
-@'
-from pathlib import Path
-p = Path('launcher/original/AndroidManifest.xml')
-b = bytearray(p.read_bytes())
-old = 'v1.5.0'.encode('utf-16le')
-new = 'v1.4.9'.encode('utf-16le')
-pos = b.find(old)
-if pos < 0:
-    raise SystemExit('versionName not found')
-b[pos:pos + len(old)] = new
-p.write_bytes(b)
-print('patched versionName offset', pos)
-'@ | python -
-```
-
-注意：
-
-- 尽量使用等长版本名做临时测试，例如 `v1.5.0` -> `v1.4.9`。
-- 如果长度不同，需要完整重建 AXML 字符串池，不建议临时手改。
-- 文本 Manifest 当前写 `1.5.0`，最终二进制 Manifest 里通常是 `v1.5.0`，以 `aapt2 dump badging` 结果为准。
-
-## 二进制 Manifest 改 versionCode
-
-`versionCode` 是 manifest start tag 上的属性数据，不是简单字符串。当前解析方式如下：
-
-```powershell
-@'
-from pathlib import Path
-import struct
-
-b = Path('launcher/original/AndroidManifest.xml').read_bytes()
-
-def u16(o): return struct.unpack_from('<H', b, o)[0]
-def u32(o): return struct.unpack_from('<I', b, o)[0]
-
-sp = 8
-sp_size = u32(sp + 4)
-string_count = u32(sp + 8)
-strings_start = u32(sp + 20)
-
-strings = []
-for i in range(string_count):
-    off = u32(sp + 28 + i * 4)
-    pos = sp + strings_start + off
-    length = b[pos]
-    if length & 0x80:
-        length = ((length & 0x7f) << 8) | b[pos + 1]
-        pos += 2
-    else:
-        pos += 2
-    strings.append(b[pos:pos + length * 2].decode('utf-16le', errors='replace'))
-
-pos = sp + sp_size
-while pos < len(b):
-    typ = u16(pos)
-    size = u32(pos + 4)
-    if typ == 0x0102:
-        name_idx = u32(pos + 20)
-        name = strings[name_idx] if name_idx != 0xffffffff else ''
-        if name == 'manifest':
-            attr_start = u16(pos + 24)
-            attr_size = u16(pos + 26)
-            attr_count = u16(pos + 28)
-            base = pos + 16 + attr_start
-            for j in range(attr_count):
-                a = base + j * attr_size
-                n = u32(a + 4)
-                raw = u32(a + 8)
-                vtype = b[a + 15]
-                data = u32(a + 16)
-                print(j, a, strings[n], 'raw', raw, 'type', hex(vtype), 'data', data)
-    pos += size
-'@ | python -
-```
-
-当前 `launcher\original\AndroidManifest.xml` 的 manifest 属性结构曾解析为：
-
-```text
-0 14568 versionCode type 0x10 data 25
-1 14588 versionName type 0x3 raw -> v1.5.0
-```
-
-所以当文件结构未变化时，`versionCode` 的数据位在：
-
-```text
-14568 + 16 = 14584
-```
-
-临时降到 `24` 的写法：
-
-```powershell
-@'
-from pathlib import Path
-import struct
-p = Path('launcher/original/AndroidManifest.xml')
-b = bytearray(p.read_bytes())
-struct.pack_into('<I', b, 14584, 24)
-p.write_bytes(b)
-print('patched versionCode data offset', 14584)
-'@ | python -
-```
-
-更稳妥的做法是用上面的解析脚本动态找到 `versionCode` 属性，确认 offset 后再写。
-
-## 一次性临时降版示例
-
-用于测试“检查更新”从低版本更新到线上版本，例如把本地测试包临时降到 `v1.4.9 / 24`：
-
-```powershell
-@'
-from pathlib import Path
-import struct
-
-# 1. 文本 Manifest
-p = Path('launcher/AndroidManifest.xml')
-s = p.read_text(encoding='utf-8')
-s = s.replace('android:versionCode="25"', 'android:versionCode="24"')
-s = s.replace('android:versionName="1.5.0"', 'android:versionName="1.4.9"')
-p.write_text(s, encoding='utf-8')
-
-# 2. 设置页当前版本字符串
-p = Path('launcher/tools/maintained_settings_res/res/values/strings.xml')
-s = p.read_text(encoding='utf-8')
-s = s.replace('<string name="more_current_version_txt">1.5.0</string>',
-              '<string name="more_current_version_txt">1.4.9</string>')
-p.write_text(s, encoding='utf-8')
-
-# 3. 二进制 Manifest
-p = Path('launcher/original/AndroidManifest.xml')
-b = bytearray(p.read_bytes())
-old = 'v1.5.0'.encode('utf-16le')
-new = 'v1.4.9'.encode('utf-16le')
-pos = b.find(old)
-if pos < 0:
-    raise SystemExit('binary versionName not found')
-b[pos:pos + len(old)] = new
-struct.pack_into('<I', b, 14584, 24)
-p.write_bytes(b)
-print('done')
-'@ | python -
-```
-
-然后构建并安装：
-
-```powershell
+python tools/set_launcher_version.py 1.6.0-T 34
 .\build.bat
-D:\sdk\platform-tools\adb.exe install -r -d build\launcher-signed.apk
 ```
+
+同步位置：
+
+- `launcher/AndroidManifest.xml`：文本 Manifest。
+- `launcher/tools/maintained_settings_res/res/values/strings.xml`：设置页 `more_current_version_txt`。
+- `launcher/original/AndroidManifest.xml`：最终注入 APK 的二进制 Manifest。
+
+工具解析 AXML 字符串池及属性后重建，不要求新旧版本名等长。临时降版测试也使用该工具；测试结束恢复三个入口的测试版身份。正式发布时使用同一工具写入 `1.6.0`，versionCode 按届时渠道已发布值确认，不能只删 README 中的 `-T`。最终结果以签名 APK 的 badging 为准。
 
 ## 构建后验证
 
@@ -409,7 +230,14 @@ D:\sdk\platform-tools\adb.exe shell dumpsys package com.smartisanos.launcher |
 
 ## 发版前注意
 
-- 正式发布前必须把临时降版改回正式版本；当前为 `v1.5.4 / 29`。
+- 当前为 `1.6.0-T / 34` 测试版；只有明确正式发布时才改为 `1.6.0`。
 - 三个版本入口必须同步：文本 Manifest、设置页字符串、二进制 Manifest。
 - 最终判断只看 `aapt2 dump badging build\launcher-signed.apk`。
 - `build\theme-trans-signed.apk` 是透明主题 Android 15 / Android 16 兼容安装包；发 Release 时建议和主 APK 一起上传。当前策略是用 Android 16 SDK 元数据重新打包，但保留 `targetSdkVersion=28` 兼容旧桌面逻辑。
+
+
+## arm64 批量节点分配桥
+
+build.bat沿用原构建流程，在SDK检测后新增tools/patch_native_batch_capacity.py --check和tools/build_native_batch_compat.py --sdk。需已有Android NDK；优先ANDROID_NDK_HOME，否则从SDK/ndk中选择已安装版本，不自动下载。当前验证NDK28.2.13676358，Windows aarch64-linux-android23-clang++，原生桥minAPI23、16KiB LOAD对齐，普通32位入口不变。
+
+源码launcher/tools/native/launcher_batch_compat.cpp，输出launcher/lib/arm64-v8a/liblauncher_batch_compat.so；Java桥NativeBatchAllocation.java及SceneNode.smali同步参与主APK。不要只删除原生桥／恢复旧数组偏移，否则构造及批量存储不匹配。精确底库Hash检查拒绝未知版本。修改后运行tools/tests/native_batch/run_bounds_tests.py及run_api_tests.py，实际安装与GUI另计。所有NDK路径／签名仍按本机既有配置；本补充不记录密码或凭据。

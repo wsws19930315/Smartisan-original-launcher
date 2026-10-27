@@ -48,6 +48,10 @@ public final class FolderVisualGeometry {
         if (!isFolderLayoutProperty(layoutProperty)) {
             return BASE_ROW_GAP;
         }
+        return rowGapForFolder(layoutProperty);
+    }
+
+    static float rowGapForFolder(Object layoutProperty) {
         return BASE_ROW_GAP * scaleFor(layoutProperty);
     }
 
@@ -55,6 +59,11 @@ public final class FolderVisualGeometry {
         if (!isFolderLayoutProperty(layoutProperty)) {
             return 0.0f;
         }
+        return contentGroupCenterCorrectionYForFolder(layoutProperty);
+    }
+
+    // Caller has already verified the current folder LayoutProperty identity.
+    static float contentGroupCenterCorrectionYForFolder(Object layoutProperty) {
         final float iconHeight = positive(number(layoutProperty,
                 "icon_size_with_shadow"), 0.0f);
         final float labelHeight = positive(number(layoutProperty,

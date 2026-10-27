@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="author_bilibili_url" translatable="false">https://space.bilibili.com/284480387</string>
+    <string name="author_homepage_open_failed">Unable to open the Bilibili profile.</string>
+</resources>

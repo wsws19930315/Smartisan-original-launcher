@@ -240,6 +240,63 @@ public final class RestorePageProbe {
         db.execSQL("DROP TRIGGER fail_pending");activate(context);
         check(pendingCount(context)==0&&scalar("SELECT COUNT(*) FROM table_iteminfos")==1,"DB repair retries safely");
     }
+    private static void structureValidation() throws Exception {
+        ProbeContext context = fresh(12, 1000);
+        insert(item(900, 0, 0, "Existing"));
+        JSONObject original = LayoutSnapshotExporter.exportStableSnapshot(context);
+        String pagesBefore = pageRows();
+        JSONArray valid = new JSONArray()
+                .put(item(10, 0, 1, "Folder").put("itemType", 2).put("folderIndex", 0))
+                .put(item(11, 0, 0, "Child").put("folderIndex", 10));
+        JSONObject layout = new JSONObject().put("pages", original.getJSONArray("pages")).put("items", valid);
+        LayoutSnapshotExporter.validate(layout);
+        check(FolderTopologyValidator.validate(layout).valid, "normal folder topology accepted");
+
+        JSONArray[] invalid = new JSONArray[]{
+                new JSONArray().put(item(11, 0, 0, "Orphan").put("folderIndex", 999)),
+                new JSONArray().put(item(10, 0, 0, "Self").put("itemType", 2).put("folderIndex", 10)),
+                new JSONArray().put(item(10, 0, 0, "A").put("itemType", 2).put("folderIndex", 11))
+                        .put(item(11, 0, 1, "B").put("itemType", 2).put("folderIndex", 10)),
+                new JSONArray().put(item(10, 0, 0, "Duplicate")).put(item(10, 0, 1, "Duplicate2"))
+        };
+        for (int i = 0; i < invalid.length; i++) {
+            JSONObject broken = new JSONObject().put("pages", original.getJSONArray("pages")).put("items", invalid[i]);
+            boolean rejected = false;
+            try { LayoutSnapshotExporter.validate(broken); } catch (Exception expected) { rejected = true; }
+            check(rejected, "archive structural validation rejects case " + i);
+            File checkpoint = new File(context.getFilesDir(), "untouched-pending.json");
+            BackupFileUtils.writeJson(checkpoint, new JSONObject().put("sentinel", "retained"));
+            rejected = false;
+            try { LayoutSnapshotImporter.restore(context, broken, 12, checkpoint, new JSONObject(), context.getCacheDir()); }
+            catch (Exception expected) { rejected = true; }
+            check(rejected, "import rejects malformed source case " + i);
+            check(scalar("SELECT COUNT(*) FROM table_iteminfos WHERE _id=900") == 1
+                    && scalar("SELECT COUNT(*) FROM table_iteminfos") == 1 && pagesBefore.equals(pageRows()),
+                    "malformed source leaves live fixture database intact case " + i);
+            check("retained".equals(BackupFileUtils.readJson(checkpoint, 1024).getString("sentinel")),
+                    "malformed source leaves pending checkpoint intact case " + i);
+        }
+        for (long parent : new long[]{0, 10, 11}) {
+            db.delete("table_iteminfos", null, null);
+            insert(item(10, 0, 0, "A").put("itemType", 2).put("folderIndex", parent));
+            if (parent == 11) insert(item(11, 0, 1, "B").put("itemType", 2).put("folderIndex", 10));
+            check(FolderTopologyValidator.validateDatabase(db).valid == (parent == 0),
+                    "database cycle gate agrees with source validation parent=" + parent);
+        }
+        // Iterative validation must not overflow the Java stack for a deep malformed chain.
+        JSONArray chain = new JSONArray();
+        for (int i = 1; i <= 12000; i++) chain.put(new JSONObject().put("_id", i).put("itemType", 2)
+                .put("folderIndex", i == 12000 ? 1 : i + 1));
+        check(!FolderTopologyValidator.validate(new JSONObject().put("items", chain)).valid,
+                "large folder cycle rejected without recursion");
+        chain.getJSONObject(chain.length() - 1).put("folderIndex", 0);
+        check(FolderTopologyValidator.validate(new JSONObject().put("items", chain)).valid,
+                "acyclic legacy folder chain is not newly prohibited");
+        chain.put(new JSONObject().put("_id", 12001).put("itemType", 2).put("folderIndex", 6000));
+        check(FolderTopologyValidator.validate(new JSONObject().put("items", chain)).valid,
+                "shared acyclic parent path is not mistaken for a cycle");
+    }
+
     public static void main(String[] args) throws Exception {
         root = new File(args[0]).getCanonicalFile();
         if (!root.getPath().startsWith("/data/local/tmp/smartisan-restore-pages-f02-")) throw new IllegalArgumentException("Unsafe probe workspace");
@@ -273,6 +330,7 @@ public final class RestorePageProbe {
             check(scalar("SELECT COUNT(*) FROM table_pageinfos WHERE pageIndex=-1") == 999, "baseline ignores reserved slots");
             System.out.println("BASELINE_PAGE_OVERFLOW_REPRODUCED pageRows=1001 unused=999");
         } else {
+            structureValidation();
             for (int grid : new int[]{12, 20}) { basicAndRoundTrip(grid); protectedAndRollback(grid); }
             System.out.println("PASS RESTORE_PAGE_CHECKS=" + checks);
         }

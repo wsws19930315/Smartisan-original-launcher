@@ -98,7 +98,7 @@
     <string name="follow_dialog_coyp_toast_text">文本已复制</string>
     <string name="follow_dialog_weibo_title_text">复制后打开微博，在搜索微博处可粘贴搜索并关注</string>
     <string name="follow_dialog_weixin_title_text">复制后打开抖音，可粘贴搜索后关注</string>
-    <string name="follow_website_title">官方网站</string>
+    <string name="follow_website_title">QQ群</string>
     <string name="follow_weibo_content">锤子科技</string>
     <string name="follow_weibo_title">新浪微博</string>
     <string name="follow_weixin_title">编译作者</string>
@@ -817,6 +817,6 @@
     <string name="backup_excluded_contacts">联系人搜索</string>
     <string name="backup_excluded_system_panels">下滑打开系统面板</string>
     <string name="sponsor_title">Power by</string>
-    <string name="sponsor_names">@夏尔美、@星辰、@幸福的街角、@287266982、@CH</string>
+    <string name="sponsor_names">@夏尔美、@星辰、@幸福的街角、@287266982、@CH、@我没叫啊</string>
     <string name="sponsor_thanks">感谢以上锤友赞助支持，排名不分先后</string>
 </resources>

@@ -282,7 +282,9 @@ public final class QuickDesktopHostView extends FrameLayout {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (openProgress <= 0.0f) {
+        // A drag can reach zero before UP/CANCEL. Finish its existing ownership
+        // so the controller can remove the transparent full-screen window.
+        if (openProgress <= 0.0f && !touchSequenceActive) {
             return false;
         }
         int action = event.getActionMasked();

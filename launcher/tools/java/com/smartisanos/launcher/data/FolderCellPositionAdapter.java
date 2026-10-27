@@ -34,8 +34,8 @@ public final class FolderCellPositionAdapter {
             return y;
         }
         return middleY
-                + FolderVisualGeometry.contentGroupCenterCorrectionY(layoutProperty)
-                + (MIDDLE_ROW - row) * FolderVisualGeometry.rowGap(layoutProperty);
+                + FolderVisualGeometry.contentGroupCenterCorrectionYForFolder(layoutProperty)
+                + (MIDDLE_ROW - row) * FolderVisualGeometry.rowGapForFolder(layoutProperty);
     }
 
     public static float adjustYByIndex(Object page, int index, float y) {
@@ -61,6 +61,8 @@ public final class FolderCellPositionAdapter {
             return positions;
         }
         try {
+            float correctionY = FolderVisualGeometry.contentGroupCenterCorrectionYForFolder(layoutProperty);
+            float rowGap = FolderVisualGeometry.rowGapForFolder(layoutProperty);
             int length = Array.getLength(positions);
             Object adapted = Array.newInstance(positions.getClass().getComponentType(), length);
             for (int index = 0; index < length; index++) {
@@ -72,7 +74,7 @@ public final class FolderCellPositionAdapter {
                             columnCenterX(layoutProperty, index % COLUMN_COUNT, x));
                     float y = floatField(copy, "y", 0.0f);
                     setFloatField(copy, "y",
-                            adjustedY(positions, layoutProperty, index, y));
+                            adjustedY(positions, index, y, correctionY, rowGap));
                 }
                 Array.set(adapted, index, copy);
             }
@@ -145,8 +147,8 @@ public final class FolderCellPositionAdapter {
         return constructor.newInstance(source);
     }
 
-    private static float adjustedY(Object positions, Object layoutProperty,
-            int index, float fallback) {
+    private static float adjustedY(Object positions, int index, float fallback,
+            float correctionY, float rowGap) {
         int column = clampColumn(index % COLUMN_COUNT);
         int middleIndex = COLUMN_COUNT + column;
         if (middleIndex >= Array.getLength(positions)) {
@@ -159,8 +161,8 @@ public final class FolderCellPositionAdapter {
         float middleY = floatField(middle, "y", fallback);
         int row = index / COLUMN_COUNT;
         return middleY
-                + FolderVisualGeometry.contentGroupCenterCorrectionY(layoutProperty)
-                + (MIDDLE_ROW - row) * FolderVisualGeometry.rowGap(layoutProperty);
+                + correctionY
+                + (MIDDLE_ROW - row) * rowGap;
     }
 
     private static float floatField(Object target, String name, float fallback) {

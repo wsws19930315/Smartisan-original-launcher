@@ -1,0 +1,3792 @@
+{
+  "test_device": "emulator-5554 Pixel_6_Pro Android 16 API36",
+  "navigation": "gesture mode=2",
+  "baseline_sha256": "b40fa56821d3f797d13c869ec9455878b24de19934727748f3721ea65d802951",
+  "candidate_sha256": "b86fc41f3a28624c0750bef9604a65d127f5b993cf06741cb4057bec0ad8527a",
+  "outcome": "Wallpaper exposure persists in all three valid returns in both groups; candidate not accepted, candidate production edits reverted. Physical vivo not operated.",
+  "time_origin": "Resume begin Perfetto trace marker; video PTS not absolutely aligned; FrameTimeline end is not display presentation",
+  "groups": [
+    {
+      "label": "emulator-before-gesture",
+      "pid": "3043",
+      "pid_stable": true,
+      "rounds": [
+        {
+          "round": 0,
+          "markers_ms": {
+            "SURFACE_CREATE": 31.539,
+            "GL_DRAW_COMPLETE": 75.386,
+            "RESUME_DIRTY_TASKS": 187.171
+          },
+          "first_surfaceframe_event_end_ms": 182.411,
+          "first_visible_buffer_layer_ms": 403.702,
+          "ancestor_snapshot_ms": 220.613,
+          "ancestor_chain": [
+            {
+              "layer": "116fa80 SurfaceView[smt_launcher](BLAST)#200",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1282"
+                },
+                {
+                  "key": "active_buffer.width",
+                  "display_value": "1080"
+                },
+                {
+                  "key": "active_buffer.height",
+                  "display_value": "2400"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 199"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "116fa80 SurfaceView[smt_launcher]#199",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 198"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Bounds for - smt_launcher#198",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 195"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "smt_launcher#195",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "8449"
+                },
+                {
+                  "key": "active_buffer.width",
+                  "display_value": "1080"
+                },
+                {
+                  "key": "active_buffer.height",
+                  "display_value": "2400"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "hidden by parent 156"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "18e5830 smt_launcher#156",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "4096"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 150"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "ActivityRecord{231169320 u0 com.smartisanos.launcher/.Launcher t76}#150",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "hidden by parent 149"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[4]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Task=76#149",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 44"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Task=1#44",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "DefaultTaskDisplayArea#10",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "AppZoomOut:2:14#9",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "OneHanded:0:14#5",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "HideDisplayCutout:0:14#4",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "WindowedMagnification:0:31#3",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Display 0 name=\"Built-in Screen\"#39",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "2"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "round": 1,
+          "markers_ms": {
+            "SURFACE_CREATE": 65.743,
+            "GL_DRAW_COMPLETE": 123.335,
+            "RESUME_DIRTY_TASKS": 251.542
+          },
+          "first_surfaceframe_event_end_ms": 228.189,
+          "first_visible_buffer_layer_ms": 494.665,
+          "ancestor_snapshot_ms": 315.487,
+          "ancestor_chain": [
+            {
+              "layer": "116fa80 SurfaceView[smt_launcher](BLAST)#224",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1282"
+                },
+                {
+                  "key": "active_buffer.width",
+                  "display_value": "1080"
+                },
+                {
+                  "key": "active_buffer.height",
+                  "display_value": "2400"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 223"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "116fa80 SurfaceView[smt_launcher]#223",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 222"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Bounds for - smt_launcher#222",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 219"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "smt_launcher#219",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "8449"
+                },
+                {
+                  "key": "active_buffer.width",
+                  "display_value": "1080"
+                },
+                {
+                  "key": "active_buffer.height",
+                  "display_value": "2400"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "hidden by parent 156"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "18e5830 smt_launcher#156",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "4096"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 150"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "ActivityRecord{231169320 u0 com.smartisanos.launcher/.Launcher t76}#150",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "hidden by parent 149"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[4]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Task=76#149",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 44"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Task=1#44",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "DefaultTaskDisplayArea#10",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "AppZoomOut:2:14#9",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "OneHanded:0:14#5",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "HideDisplayCutout:0:14#4",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "WindowedMagnification:0:31#3",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Display 0 name=\"Built-in Screen\"#39",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "2"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "markers_ms": {
+            "SURFACE_CREATE": 59.045,
+            "GL_DRAW_COMPLETE": 95.595,
+            "RESUME_DIRTY_TASKS": 168.906
+          },
+          "first_surfaceframe_event_end_ms": 144.369,
+          "first_visible_buffer_layer_ms": 501.581,
+          "ancestor_snapshot_ms": 178.599,
+          "ancestor_chain": [
+            {
+              "layer": "116fa80 SurfaceView[smt_launcher](BLAST)#248",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1282"
+                },
+                {
+                  "key": "active_buffer.width",
+                  "display_value": "1080"
+                },
+                {
+                  "key": "active_buffer.height",
+                  "display_value": "2400"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 247"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "116fa80 SurfaceView[smt_launcher]#247",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 246"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Bounds for - smt_launcher#246",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 243"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "smt_launcher#243",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "8449"
+                },
+                {
+                  "key": "active_buffer.width",
+                  "display_value": "1080"
+                },
+                {
+                  "key": "active_buffer.height",
+                  "display_value": "2400"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "hidden by parent 156"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "18e5830 smt_launcher#156",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "4096"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 150"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "ActivityRecord{231169320 u0 com.smartisanos.launcher/.Launcher t76}#150",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "hidden by parent 149"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[4]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Task=76#149",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 44"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Task=1#44",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "DefaultTaskDisplayArea#10",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "AppZoomOut:2:14#9",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "OneHanded:0:14#5",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "HideDisplayCutout:0:14#4",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "WindowedMagnification:0:31#3",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Display 0 name=\"Built-in Screen\"#39",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "2"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "emulator-candidate-gesture",
+      "pid": "4544",
+      "pid_stable": true,
+      "rounds": [
+        {
+          "round": 0,
+          "markers_ms": {
+            "SURFACE_CREATE": 124.945,
+            "GL_DRAW_COMPLETE": 151.055,
+            "RESUME_GL_AFTER_SWAP_ATTEMPT": 173.021,
+            "SURFACE_REDRAW_REQUEST": 174.204,
+            "RESUME_WINDOW_FRAME_COMMITTED": 259.962,
+            "SURFACE_REDRAW_CALLBACK": 265.418,
+            "RESUME_DIRTY_TASKS": 307.92
+          },
+          "first_surfaceframe_event_end_ms": 241.761,
+          "first_visible_buffer_layer_ms": 492.41,
+          "ancestor_snapshot_ms": 290.216,
+          "ancestor_chain": [
+            {
+              "layer": "df9d4fe SurfaceView[smt_launcher](BLAST)#301",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1282"
+                },
+                {
+                  "key": "active_buffer.width",
+                  "display_value": "1080"
+                },
+                {
+                  "key": "active_buffer.height",
+                  "display_value": "2400"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 300"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "df9d4fe SurfaceView[smt_launcher]#300",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 299"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Bounds for - smt_launcher#299",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 296"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "smt_launcher#296",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "8449"
+                },
+                {
+                  "key": "active_buffer.width",
+                  "display_value": "1080"
+                },
+                {
+                  "key": "active_buffer.height",
+                  "display_value": "2400"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "hidden by parent 265"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "e374138 smt_launcher#265",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "4096"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 259"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "ActivityRecord{113831220 u0 com.smartisanos.launcher/.Launcher t79}#259",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "hidden by parent 258"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[4]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Task=79#258",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 44"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Task=1#44",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "DefaultTaskDisplayArea#10",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "AppZoomOut:2:14#9",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "OneHanded:0:14#5",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "HideDisplayCutout:0:14#4",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "WindowedMagnification:0:31#3",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Display 0 name=\"Built-in Screen\"#39",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "2"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "round": 1,
+          "markers_ms": {
+            "SURFACE_CREATE": 84.588,
+            "GL_DRAW_COMPLETE": 180.894,
+            "RESUME_GL_AFTER_SWAP_ATTEMPT": 229.886,
+            "SURFACE_REDRAW_REQUEST": 244.95,
+            "RESUME_WINDOW_FRAME_COMMITTED": 299.849,
+            "SURFACE_REDRAW_CALLBACK": 312.08,
+            "RESUME_DIRTY_TASKS": 319.307
+          },
+          "first_surfaceframe_event_end_ms": 265.712,
+          "first_visible_buffer_layer_ms": 453.382,
+          "ancestor_snapshot_ms": 309.227,
+          "ancestor_chain": [
+            {
+              "layer": "df9d4fe SurfaceView[smt_launcher](BLAST)#328",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1282"
+                },
+                {
+                  "key": "active_buffer.width",
+                  "display_value": "1080"
+                },
+                {
+                  "key": "active_buffer.height",
+                  "display_value": "2400"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 327"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "df9d4fe SurfaceView[smt_launcher]#327",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 326"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Bounds for - smt_launcher#326",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 323"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "smt_launcher#323",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "8449"
+                },
+                {
+                  "key": "active_buffer.width",
+                  "display_value": "1080"
+                },
+                {
+                  "key": "active_buffer.height",
+                  "display_value": "2400"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "hidden by parent 265"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "e374138 smt_launcher#265",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "4096"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 259"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "ActivityRecord{113831220 u0 com.smartisanos.launcher/.Launcher t79}#259",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "hidden by parent 258"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[4]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Task=79#258",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 44"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Task=1#44",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "DefaultTaskDisplayArea#10",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "AppZoomOut:2:14#9",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "OneHanded:0:14#5",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "HideDisplayCutout:0:14#4",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "WindowedMagnification:0:31#3",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Display 0 name=\"Built-in Screen\"#39",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "2"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "markers_ms": {
+            "SURFACE_CREATE": 182.53,
+            "GL_DRAW_COMPLETE": 244.406,
+            "RESUME_GL_AFTER_SWAP_ATTEMPT": 281.341,
+            "SURFACE_REDRAW_REQUEST": 291.07,
+            "SURFACE_REDRAW_CALLBACK": 329.628,
+            "RESUME_WINDOW_FRAME_COMMITTED": 387.317,
+            "RESUME_DIRTY_TASKS": 395.008
+          },
+          "first_surfaceframe_event_end_ms": 371.978,
+          "first_visible_buffer_layer_ms": 538.629,
+          "ancestor_snapshot_ms": 422.377,
+          "ancestor_chain": [
+            {
+              "layer": "df9d4fe SurfaceView[smt_launcher](BLAST)#352",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1282"
+                },
+                {
+                  "key": "active_buffer.width",
+                  "display_value": "1080"
+                },
+                {
+                  "key": "active_buffer.height",
+                  "display_value": "2400"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 351"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "df9d4fe SurfaceView[smt_launcher]#351",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 350"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Bounds for - smt_launcher#350",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 347"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "smt_launcher#347",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "8449"
+                },
+                {
+                  "key": "active_buffer.width",
+                  "display_value": "1080"
+                },
+                {
+                  "key": "active_buffer.height",
+                  "display_value": "2400"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "hidden by parent 265"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "e374138 smt_launcher#265",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "4096"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 259"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "ActivityRecord{113831220 u0 com.smartisanos.launcher/.Launcher t79}#259",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "hidden by parent 258"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[4]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Task=79#258",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "hidden by parent 44"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Task=1#44",
+              "visible": 0,
+              "hidden": 1,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "1"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "flag is hidden"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[3]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "DefaultTaskDisplayArea#10",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "AppZoomOut:2:14#9",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "OneHanded:0:14#5",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "HideDisplayCutout:0:14#4",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "WindowedMagnification:0:31#3",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "0"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            },
+            {
+              "layer": "Display 0 name=\"Built-in Screen\"#39",
+              "visible": 0,
+              "hidden": 0,
+              "args": [
+                {
+                  "key": "flags",
+                  "display_value": "2"
+                },
+                {
+                  "key": "visibility_reason[0]",
+                  "display_value": "buffer is empty"
+                },
+                {
+                  "key": "visibility_reason[1]",
+                  "display_value": "does not have color fill, shadow or blur"
+                },
+                {
+                  "key": "visibility_reason[2]",
+                  "display_value": "null visible region"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "home_key_route_comparison": {
+    "scope": "Android 16 emulator only; same navigation mode 2; no APK install between groups",
+    "time_origin": "Launcher HOME:RESUME_BEGIN; WM/SF snapshot timestamps are not panel presentation",
+    "groups": [
+      {
+        "label": "emulator-wm-gesture",
+        "navigation_mode": "2",
+        "pids": [
+          "5135",
+          "5135",
+          "5135",
+          "5135"
+        ],
+        "sessions": [
+          {
+            "resume_ns": 6922959587300,
+            "window_states": [
+              {
+                "ms": 20.25,
+                "title": "smt_launcher",
+                "is_visible": 0,
+                "draw": null,
+                "shown": null
+              },
+              {
+                "ms": 128.793,
+                "title": "smt_launcher",
+                "is_visible": 1,
+                "draw": "DRAW_PENDING",
+                "shown": null
+              },
+              {
+                "ms": 330.969,
+                "title": "smt_launcher",
+                "is_visible": 1,
+                "draw": "HAS_DRAWN",
+                "shown": 1
+              }
+            ],
+            "first_buffer_ms": 190.731,
+            "first_visible_ms": 443.042,
+            "transitions": [
+              {
+                "id": 0,
+                "ts": 6922830317400,
+                "transition_id": 49,
+                "arg_set_id": 465771,
+                "transition_type": 1021,
+                "send_time_ns": 6922830317400,
+                "dispatch_time_ns": 6922883310500,
+                "duration_ns": 655994400,
+                "finish_time_ns": 6923539304900,
+                "shell_abort_time_ns": null,
+                "wm_abort_time_ns": null,
+                "merge_time_ns": null,
+                "create_time_ns": 6922619913600,
+                "handler": 1,
+                "status": "played",
+                "flags": 128,
+                "start_transaction_id": 3380139265759,
+                "finish_transaction_id": 3380139265764,
+                "relative_ms": {
+                  "send_time_ns": -129.27,
+                  "dispatch_time_ns": -76.277,
+                  "finish_time_ns": 579.718,
+                  "shell_abort_time_ns": null,
+                  "wm_abort_time_ns": null,
+                  "merge_time_ns": null,
+                  "create_time_ns": -339.674
+                }
+              },
+              {
+                "id": 1,
+                "ts": 6923247706400,
+                "transition_id": 50,
+                "arg_set_id": 465792,
+                "transition_type": 1,
+                "send_time_ns": 6923247706400,
+                "dispatch_time_ns": null,
+                "duration_ns": null,
+                "finish_time_ns": 6923549807400,
+                "shell_abort_time_ns": null,
+                "wm_abort_time_ns": null,
+                "merge_time_ns": 6923312862700,
+                "create_time_ns": 6922902491900,
+                "handler": null,
+                "status": "merged",
+                "flags": null,
+                "start_transaction_id": 3380139265785,
+                "finish_transaction_id": 3380139265795,
+                "relative_ms": {
+                  "send_time_ns": 288.119,
+                  "dispatch_time_ns": null,
+                  "finish_time_ns": 590.22,
+                  "shell_abort_time_ns": null,
+                  "wm_abort_time_ns": null,
+                  "merge_time_ns": 353.275,
+                  "create_time_ns": -57.095
+                }
+              }
+            ],
+            "show_events": [
+              {
+                "ms": 286.213,
+                "message": "SURFACE SHOW (performLayout): smt_launcher"
+              }
+            ]
+          },
+          {
+            "resume_ns": 6925514529400,
+            "window_states": [
+              {
+                "ms": 9.933,
+                "title": "smt_launcher",
+                "is_visible": 0,
+                "draw": null,
+                "shown": null
+              },
+              {
+                "ms": 32.222,
+                "title": "smt_launcher",
+                "is_visible": 1,
+                "draw": "DRAW_PENDING",
+                "shown": null
+              },
+              {
+                "ms": 277.259,
+                "title": "smt_launcher",
+                "is_visible": 1,
+                "draw": "HAS_DRAWN",
+                "shown": 1
+              }
+            ],
+            "first_buffer_ms": 179.028,
+            "first_visible_ms": 378.373,
+            "transitions": [
+              {
+                "id": 2,
+                "ts": 6925421707100,
+                "transition_id": 52,
+                "arg_set_id": 465813,
+                "transition_type": 1021,
+                "send_time_ns": 6925421707100,
+                "dispatch_time_ns": 6925472886000,
+                "duration_ns": 572853100,
+                "finish_time_ns": 6926045739100,
+                "shell_abort_time_ns": null,
+                "wm_abort_time_ns": null,
+                "merge_time_ns": null,
+                "create_time_ns": 6925261174200,
+                "handler": 1,
+                "status": "played",
+                "flags": 128,
+                "start_transaction_id": 3380139265942,
+                "finish_transaction_id": 3380139265947,
+                "relative_ms": {
+                  "send_time_ns": -92.822,
+                  "dispatch_time_ns": -41.643,
+                  "finish_time_ns": 531.21,
+                  "shell_abort_time_ns": null,
+                  "wm_abort_time_ns": null,
+                  "merge_time_ns": null,
+                  "create_time_ns": -253.355
+                }
+              },
+              {
+                "id": 3,
+                "ts": 6925778353900,
+                "transition_id": 53,
+                "arg_set_id": 465834,
+                "transition_type": 1,
+                "send_time_ns": 6925778353900,
+                "dispatch_time_ns": null,
+                "duration_ns": null,
+                "finish_time_ns": 6926067115100,
+                "shell_abort_time_ns": null,
+                "wm_abort_time_ns": null,
+                "merge_time_ns": 6925827971000,
+                "create_time_ns": 6925482440200,
+                "handler": null,
+                "status": "merged",
+                "flags": null,
+                "start_transaction_id": 3380139265969,
+                "finish_transaction_id": 3380139265979,
+                "relative_ms": {
+                  "send_time_ns": 263.825,
+                  "dispatch_time_ns": null,
+                  "finish_time_ns": 552.586,
+                  "shell_abort_time_ns": null,
+                  "wm_abort_time_ns": null,
+                  "merge_time_ns": 313.442,
+                  "create_time_ns": -32.089
+                }
+              }
+            ],
+            "show_events": [
+              {
+                "ms": 262.449,
+                "message": "SURFACE SHOW (performLayout): smt_launcher"
+              }
+            ]
+          },
+          {
+            "resume_ns": 6927685158600,
+            "window_states": [
+              {
+                "ms": 7.562,
+                "title": "smt_launcher",
+                "is_visible": 0,
+                "draw": null,
+                "shown": null
+              },
+              {
+                "ms": 64.429,
+                "title": "smt_launcher",
+                "is_visible": 1,
+                "draw": "DRAW_PENDING",
+                "shown": null
+              },
+              {
+                "ms": 309.395,
+                "title": "smt_launcher",
+                "is_visible": 1,
+                "draw": "HAS_DRAWN",
+                "shown": 1
+              }
+            ],
+            "first_buffer_ms": 179.325,
+            "first_visible_ms": 375.659,
+            "transitions": [
+              {
+                "id": 5,
+                "ts": 6927589147800,
+                "transition_id": 55,
+                "arg_set_id": 465877,
+                "transition_type": 1021,
+                "send_time_ns": 6927589147800,
+                "dispatch_time_ns": 6927629795800,
+                "duration_ns": 580309400,
+                "finish_time_ns": 6928210105200,
+                "shell_abort_time_ns": null,
+                "wm_abort_time_ns": null,
+                "merge_time_ns": null,
+                "create_time_ns": 6927436282200,
+                "handler": 1,
+                "status": "played",
+                "flags": 128,
+                "start_transaction_id": 3380139266109,
+                "finish_transaction_id": 3380139266114,
+                "relative_ms": {
+                  "send_time_ns": -96.011,
+                  "dispatch_time_ns": -55.363,
+                  "finish_time_ns": 524.947,
+                  "shell_abort_time_ns": null,
+                  "wm_abort_time_ns": null,
+                  "merge_time_ns": null,
+                  "create_time_ns": -248.876
+                }
+              },
+              {
+                "id": 6,
+                "ts": 6927975062700,
+                "transition_id": 56,
+                "arg_set_id": 465898,
+                "transition_type": 1,
+                "send_time_ns": 6927975062700,
+                "dispatch_time_ns": null,
+                "duration_ns": null,
+                "finish_time_ns": 6928245248400,
+                "shell_abort_time_ns": null,
+                "wm_abort_time_ns": null,
+                "merge_time_ns": 6928046406100,
+                "create_time_ns": 6927646669900,
+                "handler": null,
+                "status": "merged",
+                "flags": null,
+                "start_transaction_id": 3380139266136,
+                "finish_transaction_id": 3380139266146,
+                "relative_ms": {
+                  "send_time_ns": 289.904,
+                  "dispatch_time_ns": null,
+                  "finish_time_ns": 560.09,
+                  "shell_abort_time_ns": null,
+                  "wm_abort_time_ns": null,
+                  "merge_time_ns": 361.248,
+                  "create_time_ns": -38.489
+                }
+              }
+            ],
+            "show_events": [
+              {
+                "ms": 288.975,
+                "message": "SURFACE SHOW (performLayout): smt_launcher"
+              }
+            ]
+          }
+        ],
+        "trace_error_stats": [
+          {
+            "name": "config_write_into_file_no_flush",
+            "value": 1
+          }
+        ],
+        "recorded_frame_screen": {
+          "frames": 151,
+          "candidate_frames": 32,
+          "max_blue_fraction": 0.2915363511659808,
+          "scope": "All decoded recorded frames. Color threshold only screens wallpaper candidates; not panel presentation or pixel-perfect acceptance."
+        },
+        "visual_observation": "wallpaper exposed in all three recorded gesture returns"
+      },
+      {
+        "label": "emulator-wm-home-key",
+        "navigation_mode": "2",
+        "pids": [
+          "5135",
+          "5135",
+          "5135",
+          "5135"
+        ],
+        "sessions": [
+          {
+            "resume_ns": 7065110080200,
+            "window_states": [
+              {
+                "ms": 2.736,
+                "title": "smt_launcher",
+                "is_visible": 0,
+                "draw": null,
+                "shown": null
+              },
+              {
+                "ms": 76.129,
+                "title": "smt_launcher",
+                "is_visible": 1,
+                "draw": "DRAW_PENDING",
+                "shown": null
+              },
+              {
+                "ms": 299.532,
+                "title": "smt_launcher",
+                "is_visible": 1,
+                "draw": "HAS_DRAWN",
+                "shown": 1
+              }
+            ],
+            "first_buffer_ms": 128.728,
+            "first_visible_ms": 287.534,
+            "transitions": [
+              {
+                "id": 0,
+                "ts": 7065325253600,
+                "transition_id": 59,
+                "arg_set_id": 382442,
+                "transition_type": 1,
+                "send_time_ns": 7065325253600,
+                "dispatch_time_ns": 7065334373000,
+                "duration_ns": 282319200,
+                "finish_time_ns": 7065616692200,
+                "shell_abort_time_ns": null,
+                "wm_abort_time_ns": null,
+                "merge_time_ns": null,
+                "create_time_ns": 7065079375100,
+                "handler": 2,
+                "status": "played",
+                "flags": null,
+                "start_transaction_id": 3380139266297,
+                "finish_transaction_id": 3380139266305,
+                "relative_ms": {
+                  "send_time_ns": 215.173,
+                  "dispatch_time_ns": 224.293,
+                  "finish_time_ns": 506.612,
+                  "shell_abort_time_ns": null,
+                  "wm_abort_time_ns": null,
+                  "merge_time_ns": null,
+                  "create_time_ns": -30.705
+                }
+              }
+            ],
+            "show_events": [
+              {
+                "ms": 84.364,
+                "message": "SURFACE SHOW (performLayout): com.android.systemui.wallpapers.ImageWallpaper"
+              },
+              {
+                "ms": 213.732,
+                "message": "SURFACE SHOW (performLayout): smt_launcher"
+              }
+            ]
+          },
+          {
+            "resume_ns": 7067027431900,
+            "window_states": [
+              {
+                "ms": 3.261,
+                "title": "smt_launcher",
+                "is_visible": 0,
+                "draw": null,
+                "shown": null
+              },
+              {
+                "ms": 32.393,
+                "title": "smt_launcher",
+                "is_visible": 1,
+                "draw": "DRAW_PENDING",
+                "shown": null
+              },
+              {
+                "ms": 265.115,
+                "title": "smt_launcher",
+                "is_visible": 1,
+                "draw": "HAS_DRAWN",
+                "shown": 1
+              }
+            ],
+            "first_buffer_ms": 80.002,
+            "first_visible_ms": 284.97,
+            "transitions": [
+              {
+                "id": 2,
+                "ts": 7067202899800,
+                "transition_id": 61,
+                "arg_set_id": 382484,
+                "transition_type": 1,
+                "send_time_ns": 7067202899800,
+                "dispatch_time_ns": 7067240578600,
+                "duration_ns": 269027000,
+                "finish_time_ns": 7067509605600,
+                "shell_abort_time_ns": null,
+                "wm_abort_time_ns": null,
+                "merge_time_ns": null,
+                "create_time_ns": 7066995557100,
+                "handler": 2,
+                "status": "played",
+                "flags": null,
+                "start_transaction_id": 3380139266441,
+                "finish_transaction_id": 3380139266449,
+                "relative_ms": {
+                  "send_time_ns": 175.468,
+                  "dispatch_time_ns": 213.147,
+                  "finish_time_ns": 482.174,
+                  "shell_abort_time_ns": null,
+                  "wm_abort_time_ns": null,
+                  "merge_time_ns": null,
+                  "create_time_ns": -31.875
+                }
+              }
+            ],
+            "show_events": [
+              {
+                "ms": 31.246,
+                "message": "SURFACE SHOW (performLayout): com.android.systemui.wallpapers.ImageWallpaper"
+              },
+              {
+                "ms": 174.654,
+                "message": "SURFACE SHOW (performLayout): smt_launcher"
+              }
+            ]
+          },
+          {
+            "resume_ns": 7068931226600,
+            "window_states": [
+              {
+                "ms": -0.189,
+                "title": "smt_launcher",
+                "is_visible": 0,
+                "draw": null,
+                "shown": null
+              },
+              {
+                "ms": 26.663,
+                "title": "smt_launcher",
+                "is_visible": 1,
+                "draw": "DRAW_PENDING",
+                "shown": null
+              },
+              {
+                "ms": 444.519,
+                "title": "smt_launcher",
+                "is_visible": 1,
+                "draw": "HAS_DRAWN",
+                "shown": 1
+              }
+            ],
+            "first_buffer_ms": 187.628,
+            "first_visible_ms": 423.476,
+            "transitions": [
+              {
+                "id": 4,
+                "ts": 7069159495300,
+                "transition_id": 63,
+                "arg_set_id": 382526,
+                "transition_type": 1,
+                "send_time_ns": 7069159495300,
+                "dispatch_time_ns": 7069223057600,
+                "duration_ns": 373600200,
+                "finish_time_ns": 7069596657800,
+                "shell_abort_time_ns": null,
+                "wm_abort_time_ns": null,
+                "merge_time_ns": null,
+                "create_time_ns": 7068901190200,
+                "handler": 2,
+                "status": "played",
+                "flags": null,
+                "start_transaction_id": 3380139266582,
+                "finish_transaction_id": 3380139266590,
+                "relative_ms": {
+                  "send_time_ns": 228.269,
+                  "dispatch_time_ns": 291.831,
+                  "finish_time_ns": 665.431,
+                  "shell_abort_time_ns": null,
+                  "wm_abort_time_ns": null,
+                  "merge_time_ns": null,
+                  "create_time_ns": -30.036
+                }
+              }
+            ],
+            "show_events": [
+              {
+                "ms": 42.634,
+                "message": "SURFACE SHOW (performLayout): com.android.systemui.wallpapers.ImageWallpaper"
+              },
+              {
+                "ms": 226.435,
+                "message": "SURFACE SHOW (performLayout): smt_launcher"
+              }
+            ]
+          }
+        ],
+        "trace_error_stats": [
+          {
+            "name": "config_write_into_file_no_flush",
+            "value": 1
+          }
+        ],
+        "recorded_frame_screen": {
+          "frames": 133,
+          "candidate_frames": 0,
+          "max_blue_fraction": 0.09994513031550069,
+          "scope": "All decoded recorded frames. Color threshold only screens wallpaper candidates; not panel presentation or pixel-perfect acceptance."
+        },
+        "visual_observation": "no matching wallpaper exposure observed in three recorded HOME-key returns"
+      }
+    ],
+    "installed_apk_sha256_after": "4944e939adbe8e75c78c0a3cdda06ddf325f852722baff01309abdddfeea53ea",
+    "final_nav": "2",
+    "restored_diagnostic_settings": {
+      "launcher_home_diagnostics_enabled": "null",
+      "launcher_home_surface_attachment_experiment": "null",
+      "launcher_home_opaque_wallpaper_experiment": "null"
+    },
+    "limitations": [
+      "ADB HOME injection is not interception of the system gesture by an ordinary APK.",
+      "Trace adds overhead; snapshot timing is not panel presentation.",
+      "No OPPO or vivo device operation in this comparison.",
+      "No APK or production Launcher code changed."
+    ]
+  },
+  "texture_main_window_experiment": {
+    "apk_sha256": "FA0A3171090C4271C0749F9DFD8B82D4F774FBEB5223F928A84E0BF67BB4A7CC",
+    "scope": "API36, ordinary Black theme, opt-in; only emulator-5554 operated",
+    "outcome": "FAIL: wallpaper exposure remains in all three enabled gesture returns; prototype archived and runtime changes reverted",
+    "groups": [
+      {
+        "label": "window-host-on",
+        "sessions": [
+          {
+            "resume_ns": 8753902521400,
+            "buffer_ms": 143.097,
+            "visible_ms": 283.055,
+            "wm_show_ms": 139.115,
+            "events": [
+              {
+                "ms": 0.0,
+                "name": "HOME:RESUME_BEGIN activity=78209816 focus=false decorVisibility=8 flags=81910300 surfaceValid=false interactive=true loc"
+              },
+              {
+                "ms": 1.164,
+                "name": "HOME:RESUME_END activity=78209816 focus=false decorVisibility=8 flags=81910300 surfaceValid=false interactive=true locke"
+              },
+              {
+                "ms": 12.361,
+                "name": "HOME:SURFACE_CREATE view=122639248 valid=false attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 14.091,
+                "name": "HOME:WINDOW_VISIBLE value=0 view=122639248 valid=false attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 58.081,
+                "name": "HOME:TEXTURE_BUFFER_UPDATED presented=unknown"
+              },
+              {
+                "ms": 64.243,
+                "name": "HOME:GL_SURFACE_SIZE width=1080 height=2400"
+              },
+              {
+                "ms": 72.469,
+                "name": "HOME:GL_DRAW_COMPLETE frame=1 presented=unknown"
+              },
+              {
+                "ms": 103.128,
+                "name": "HOME:RESUME_DIRTY_TASKS"
+              },
+              {
+                "ms": 106.29,
+                "name": "HOME:SURFACE_SIZE width=1080 height=2400 view=122639248 valid=false attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 106.516,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=1 presented=unknown"
+              },
+              {
+                "ms": 132.928,
+                "name": "HOME:GL_SURFACE_SIZE width=1080 height=2400"
+              },
+              {
+                "ms": 133.581,
+                "name": "HOME:GL_DRAW_COMPLETE frame=2 presented=unknown"
+              },
+              {
+                "ms": 179.542,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=2 presented=unknown"
+              },
+              {
+                "ms": 180.704,
+                "name": "HOME:GL_DRAW_COMPLETE frame=3 presented=unknown"
+              },
+              {
+                "ms": 194.795,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=3 presented=unknown"
+              },
+              {
+                "ms": 305.658,
+                "name": "HOME:GL_DRAW_COMPLETE frame=4 presented=unknown"
+              },
+              {
+                "ms": 309.882,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=4 presented=unknown"
+              }
+            ]
+          },
+          {
+            "resume_ns": 8756084055300,
+            "buffer_ms": 272.146,
+            "visible_ms": 404.214,
+            "wm_show_ms": 350.185,
+            "events": [
+              {
+                "ms": 0.0,
+                "name": "HOME:RESUME_BEGIN activity=78209816 focus=false decorVisibility=8 flags=81910300 surfaceValid=false interactive=true loc"
+              },
+              {
+                "ms": 45.357,
+                "name": "HOME:RESUME_END activity=78209816 focus=false decorVisibility=8 flags=81910300 surfaceValid=false interactive=true locke"
+              },
+              {
+                "ms": 77.926,
+                "name": "HOME:SURFACE_CREATE view=122639248 valid=false attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 83.82,
+                "name": "HOME:WINDOW_VISIBLE value=0 view=122639248 valid=false attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 123.771,
+                "name": "HOME:GL_SURFACE_SIZE width=1080 height=2400"
+              },
+              {
+                "ms": 131.844,
+                "name": "HOME:GL_DRAW_COMPLETE frame=1 presented=unknown"
+              },
+              {
+                "ms": 154.844,
+                "name": "HOME:SURFACE_SIZE width=1080 height=2400 view=122639248 valid=false attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 154.997,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=1 presented=unknown"
+              },
+              {
+                "ms": 198.837,
+                "name": "HOME:GL_SURFACE_SIZE width=1080 height=2400"
+              },
+              {
+                "ms": 202.006,
+                "name": "HOME:TEXTURE_BUFFER_UPDATED presented=unknown"
+              },
+              {
+                "ms": 212.844,
+                "name": "HOME:GL_DRAW_COMPLETE frame=2 presented=unknown"
+              },
+              {
+                "ms": 239.214,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=2 presented=unknown"
+              },
+              {
+                "ms": 240.181,
+                "name": "HOME:GL_DRAW_COMPLETE frame=3 presented=unknown"
+              },
+              {
+                "ms": 254.14,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=3 presented=unknown"
+              },
+              {
+                "ms": 259.623,
+                "name": "HOME:RESUME_DIRTY_TASKS"
+              },
+              {
+                "ms": 351.645,
+                "name": "HOME:GL_DRAW_COMPLETE frame=4 presented=unknown"
+              },
+              {
+                "ms": 368.316,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=4 presented=unknown"
+              }
+            ]
+          },
+          {
+            "resume_ns": 8758419780000,
+            "buffer_ms": 160.217,
+            "visible_ms": 298.959,
+            "wm_show_ms": 195.428,
+            "events": [
+              {
+                "ms": 0.0,
+                "name": "HOME:RESUME_BEGIN activity=78209816 focus=false decorVisibility=8 flags=81910300 surfaceValid=false interactive=true loc"
+              },
+              {
+                "ms": 11.48,
+                "name": "HOME:RESUME_END activity=78209816 focus=false decorVisibility=8 flags=81910300 surfaceValid=false interactive=true locke"
+              },
+              {
+                "ms": 28.691,
+                "name": "HOME:SURFACE_CREATE view=122639248 valid=false attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 31.822,
+                "name": "HOME:WINDOW_VISIBLE value=0 view=122639248 valid=false attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 60.534,
+                "name": "HOME:GL_SURFACE_SIZE width=1080 height=2400"
+              },
+              {
+                "ms": 66.759,
+                "name": "HOME:GL_DRAW_COMPLETE frame=1 presented=unknown"
+              },
+              {
+                "ms": 98.965,
+                "name": "HOME:TEXTURE_BUFFER_UPDATED presented=unknown"
+              },
+              {
+                "ms": 99.525,
+                "name": "HOME:SURFACE_SIZE width=1080 height=2400 view=122639248 valid=false attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 99.663,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=1 presented=unknown"
+              },
+              {
+                "ms": 149.6,
+                "name": "HOME:GL_SURFACE_SIZE width=1080 height=2400"
+              },
+              {
+                "ms": 158.43,
+                "name": "HOME:RESUME_DIRTY_TASKS"
+              },
+              {
+                "ms": 163.036,
+                "name": "HOME:GL_DRAW_COMPLETE frame=2 presented=unknown"
+              },
+              {
+                "ms": 186.939,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=2 presented=unknown"
+              },
+              {
+                "ms": 188.971,
+                "name": "HOME:GL_DRAW_COMPLETE frame=3 presented=unknown"
+              },
+              {
+                "ms": 217.721,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=3 presented=unknown"
+              },
+              {
+                "ms": 311.686,
+                "name": "HOME:GL_DRAW_COMPLETE frame=4 presented=unknown"
+              },
+              {
+                "ms": 324.036,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=4 presented=unknown"
+              }
+            ]
+          }
+        ],
+        "independent_surface_ids": [],
+        "processes": [
+          {
+            "label": "before",
+            "host_monotonic": 24814.8813112,
+            "pid": "7375",
+            "top": [
+              "topResumedActivity=ActivityRecord{222675788 u0 com.smartisanos.launcher/.Launcher t96}",
+              "Resumed: ActivityRecord{222675788 u0 com.smartisanos.launcher/.Launcher t96}",
+              "ResumedActivity: ActivityRecord{222675788 u0 com.smartisanos.launcher/.Launcher t96}"
+            ],
+            "layers": [
+              "RequestedLayerState{4d446d4 smt_launcher#718 parentId=712}",
+              "RequestedLayerState{smt_launcher#741 parentId=718}"
+            ]
+          },
+          {
+            "label": "return-0",
+            "host_monotonic": 24819.999409,
+            "pid": "7375",
+            "top": [
+              "topResumedActivity=ActivityRecord{222675788 u0 com.smartisanos.launcher/.Launcher t96}",
+              "Resumed: ActivityRecord{222675788 u0 com.smartisanos.launcher/.Launcher t96}",
+              "ResumedActivity: ActivityRecord{222675788 u0 com.smartisanos.launcher/.Launcher t96}"
+            ],
+            "layers": [
+              "RequestedLayerState{4d446d4 smt_launcher#718 parentId=712}",
+              "RequestedLayerState{smt_launcher#769 parentId=718}"
+            ]
+          },
+          {
+            "label": "return-1",
+            "host_monotonic": 24822.2742804,
+            "pid": "7375",
+            "top": [
+              "topResumedActivity=ActivityRecord{222675788 u0 com.smartisanos.launcher/.Launcher t96}",
+              "Resumed: ActivityRecord{222675788 u0 com.smartisanos.launcher/.Launcher t96}",
+              "ResumedActivity: ActivityRecord{222675788 u0 com.smartisanos.launcher/.Launcher t96}"
+            ],
+            "layers": [
+              "RequestedLayerState{4d446d4 smt_launcher#718 parentId=712}",
+              "RequestedLayerState{smt_launcher#791 parentId=718}"
+            ]
+          },
+          {
+            "label": "return-2",
+            "host_monotonic": 24824.6394086,
+            "pid": "7375",
+            "top": [
+              "topResumedActivity=ActivityRecord{222675788 u0 com.smartisanos.launcher/.Launcher t96}",
+              "Resumed: ActivityRecord{222675788 u0 com.smartisanos.launcher/.Launcher t96}",
+              "ResumedActivity: ActivityRecord{222675788 u0 com.smartisanos.launcher/.Launcher t96}"
+            ],
+            "layers": [
+              "RequestedLayerState{4d446d4 smt_launcher#718 parentId=712}",
+              "RequestedLayerState{smt_launcher#811 parentId=718}"
+            ]
+          }
+        ],
+        "color_screen": {
+          "frames": 153,
+          "candidates": 23,
+          "note": "Color screening only; not exact exposure duration or physical-panel proof."
+        }
+      },
+      {
+        "label": "window-host-off",
+        "sessions": [
+          {
+            "resume_ns": 8812678433600,
+            "buffer_ms": 266.348,
+            "visible_ms": null,
+            "wm_show_ms": null,
+            "events": [
+              {
+                "ms": 0.0,
+                "name": "HOME:RESUME_BEGIN activity=78209816 focus=false decorVisibility=8 flags=81910300 surfaceValid=false interactive=true loc"
+              },
+              {
+                "ms": 18.32,
+                "name": "HOME:RESUME_END activity=78209816 focus=false decorVisibility=8 flags=81910300 surfaceValid=false interactive=true locke"
+              },
+              {
+                "ms": 33.7,
+                "name": "HOME:WINDOW_VISIBLE value=0 view=74151938 valid=false attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 124.474,
+                "name": "HOME:SURFACE_CREATE view=74151938 valid=true attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 133.845,
+                "name": "HOME:SURFACE_SIZE width=1080 height=2400 view=74151938 valid=true attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 204.491,
+                "name": "HOME:GL_SURFACE_SIZE width=1080 height=2400"
+              },
+              {
+                "ms": 240.173,
+                "name": "HOME:GL_DRAW_COMPLETE frame=1 presented=unknown"
+              },
+              {
+                "ms": 277.594,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=1 presented=unknown"
+              },
+              {
+                "ms": 340.404,
+                "name": "HOME:GL_SURFACE_SIZE width=1080 height=2400"
+              },
+              {
+                "ms": 343.752,
+                "name": "HOME:RESUME_DIRTY_TASKS"
+              },
+              {
+                "ms": 344.705,
+                "name": "HOME:GL_DRAW_COMPLETE frame=2 presented=unknown"
+              },
+              {
+                "ms": 367.015,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=2 presented=unknown"
+              },
+              {
+                "ms": 367.958,
+                "name": "HOME:GL_DRAW_COMPLETE frame=3 presented=unknown"
+              },
+              {
+                "ms": 401.744,
+                "name": "HOME:PAUSE activity=78209816 focus=false decorVisibility=0 flags=81910300 surfaceValid=true interactive=true locked=fals"
+              },
+              {
+                "ms": 406.359,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=3 presented=unknown"
+              },
+              {
+                "ms": 412.808,
+                "name": "HOME:GL_DRAW_COMPLETE frame=4 presented=unknown"
+              },
+              {
+                "ms": 476.538,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=4 presented=unknown"
+              }
+            ],
+            "exclusion": "Next APP launch occurred before HOME presentation completed; not a completed-return performance sample."
+          },
+          {
+            "resume_ns": 8814147868200,
+            "buffer_ms": 197.437,
+            "visible_ms": 368.922,
+            "wm_show_ms": 255.839,
+            "events": [
+              {
+                "ms": 0.0,
+                "name": "HOME:RESUME_BEGIN activity=78209816 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true loc"
+              },
+              {
+                "ms": 18.66,
+                "name": "HOME:RESUME_END activity=78209816 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locke"
+              },
+              {
+                "ms": 30.494,
+                "name": "HOME:WINDOW_VISIBLE value=0 view=74151938 valid=false attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 72.254,
+                "name": "HOME:SURFACE_CREATE view=74151938 valid=true attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 74.325,
+                "name": "HOME:SURFACE_SIZE width=1080 height=2400 view=74151938 valid=true attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 115.74,
+                "name": "HOME:GL_SURFACE_SIZE width=1080 height=2400"
+              },
+              {
+                "ms": 132.185,
+                "name": "HOME:GL_DRAW_COMPLETE frame=1 presented=unknown"
+              },
+              {
+                "ms": 157.658,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=1 presented=unknown"
+              },
+              {
+                "ms": 190.546,
+                "name": "HOME:GL_SURFACE_SIZE width=1080 height=2400"
+              },
+              {
+                "ms": 207.447,
+                "name": "HOME:GL_DRAW_COMPLETE frame=2 presented=unknown"
+              },
+              {
+                "ms": 209.93,
+                "name": "HOME:RESUME_DIRTY_TASKS"
+              },
+              {
+                "ms": 232.606,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=2 presented=unknown"
+              },
+              {
+                "ms": 235.134,
+                "name": "HOME:GL_DRAW_COMPLETE frame=3 presented=unknown"
+              },
+              {
+                "ms": 289.518,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=3 presented=unknown"
+              },
+              {
+                "ms": 313.609,
+                "name": "HOME:GL_DRAW_COMPLETE frame=4 presented=unknown"
+              },
+              {
+                "ms": 367.651,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=4 presented=unknown"
+              }
+            ]
+          },
+          {
+            "resume_ns": 8816588217800,
+            "buffer_ms": 219.976,
+            "visible_ms": 434.458,
+            "wm_show_ms": 363.514,
+            "events": [
+              {
+                "ms": 0.0,
+                "name": "HOME:RESUME_BEGIN activity=78209816 focus=false decorVisibility=8 flags=81910300 surfaceValid=false interactive=true loc"
+              },
+              {
+                "ms": 2.821,
+                "name": "HOME:RESUME_END activity=78209816 focus=false decorVisibility=8 flags=81910300 surfaceValid=false interactive=true locke"
+              },
+              {
+                "ms": 15.152,
+                "name": "HOME:WINDOW_VISIBLE value=0 view=74151938 valid=false attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 78.258,
+                "name": "HOME:SURFACE_CREATE view=74151938 valid=true attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 79.698,
+                "name": "HOME:SURFACE_SIZE width=1080 height=2400 view=74151938 valid=true attached=true visibility=0 windowVisibility=0"
+              },
+              {
+                "ms": 143.436,
+                "name": "HOME:GL_SURFACE_SIZE width=1080 height=2400"
+              },
+              {
+                "ms": 147.535,
+                "name": "HOME:GL_DRAW_COMPLETE frame=1 presented=unknown"
+              },
+              {
+                "ms": 193.975,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=1 presented=unknown"
+              },
+              {
+                "ms": 256.215,
+                "name": "HOME:RESUME_DIRTY_TASKS"
+              },
+              {
+                "ms": 259.526,
+                "name": "HOME:GL_SURFACE_SIZE width=1080 height=2400"
+              },
+              {
+                "ms": 260.519,
+                "name": "HOME:GL_DRAW_COMPLETE frame=2 presented=unknown"
+              },
+              {
+                "ms": 282.137,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=2 presented=unknown"
+              },
+              {
+                "ms": 284.749,
+                "name": "HOME:GL_DRAW_COMPLETE frame=3 presented=unknown"
+              },
+              {
+                "ms": 353.789,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=3 presented=unknown"
+              },
+              {
+                "ms": 355.888,
+                "name": "HOME:GL_DRAW_COMPLETE frame=4 presented=unknown"
+              },
+              {
+                "ms": 402.568,
+                "name": "HOME:GL_LOOP_AFTER_SWAP_ATTEMPT frame=4 presented=unknown"
+              }
+            ]
+          }
+        ],
+        "independent_surface_ids": [
+          862,
+          863,
+          864,
+          879,
+          880,
+          881,
+          903,
+          904,
+          905
+        ],
+        "processes": [
+          {
+            "label": "before",
+            "host_monotonic": 24872.6123208,
+            "pid": "8306",
+            "top": [
+              "topResumedActivity=ActivityRecord{177419111 u0 com.smartisanos.launcher/.Launcher t98}",
+              "Resumed: ActivityRecord{177419111 u0 com.smartisanos.launcher/.Launcher t98}",
+              "ResumedActivity: ActivityRecord{177419111 u0 com.smartisanos.launcher/.Launcher t98}"
+            ],
+            "layers": [
+              "RequestedLayerState{Background for 46b7802 SurfaceView[smt_launcher]#833 parentId=831 relativeParentId=829 z=-2147483648}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher](BLAST)#832 parentId=831}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher]#831 parentId=830 relativeParentId=829 z=-2}",
+              "RequestedLayerState{smt_launcher#829 parentId=827}",
+              "RequestedLayerState{Bounds for - smt_launcher#830 parentId=829}",
+              "RequestedLayerState{d3be80b smt_launcher#827 parentId=818}"
+            ]
+          },
+          {
+            "label": "return-0",
+            "host_monotonic": 24878.0609403,
+            "pid": "8306",
+            "top": [
+              "topResumedActivity=ActivityRecord{177419111 u0 com.smartisanos.launcher/.Launcher t98}",
+              "topResumedActivity=ActivityRecord{30232379 u0 com.google.android.apps.nexuslauncher/com.android.quickstep.RecentsActivity t83}",
+              "Resumed: ActivityRecord{177419111 u0 com.smartisanos.launcher/.Launcher t98}",
+              "ResumedActivity: ActivityRecord{177419111 u0 com.smartisanos.launcher/.Launcher t98}"
+            ],
+            "layers": [
+              "RequestedLayerState{d3be80b smt_launcher#827 parentId=818}"
+            ]
+          },
+          {
+            "label": "return-1",
+            "host_monotonic": 24880.2601497,
+            "pid": "8306",
+            "top": [
+              "topResumedActivity=ActivityRecord{177419111 u0 com.smartisanos.launcher/.Launcher t98}",
+              "Resumed: ActivityRecord{177419111 u0 com.smartisanos.launcher/.Launcher t98}",
+              "ResumedActivity: ActivityRecord{177419111 u0 com.smartisanos.launcher/.Launcher t98}"
+            ],
+            "layers": [
+              "RequestedLayerState{Background for 46b7802 SurfaceView[smt_launcher]#881 parentId=879 relativeParentId=875 z=-2147483648}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher](BLAST)#880 parentId=879}",
+              "RequestedLayerState{d3be80b smt_launcher#827 parentId=818}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher]#879 parentId=878 relativeParentId=875 z=-2}",
+              "RequestedLayerState{Bounds for - smt_launcher#878 parentId=875}",
+              "RequestedLayerState{smt_launcher#875 parentId=827}"
+            ]
+          },
+          {
+            "label": "return-2",
+            "host_monotonic": 24882.8268093,
+            "pid": "8306",
+            "top": [
+              "topResumedActivity=ActivityRecord{177419111 u0 com.smartisanos.launcher/.Launcher t98}",
+              "Resumed: ActivityRecord{177419111 u0 com.smartisanos.launcher/.Launcher t98}",
+              "ResumedActivity: ActivityRecord{177419111 u0 com.smartisanos.launcher/.Launcher t98}"
+            ],
+            "layers": [
+              "RequestedLayerState{d3be80b smt_launcher#827 parentId=818}",
+              "RequestedLayerState{Background for 46b7802 SurfaceView[smt_launcher]#905 parentId=903 relativeParentId=899 z=-2147483648}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher](BLAST)#904 parentId=903}",
+              "RequestedLayerState{smt_launcher#899 parentId=827}",
+              "RequestedLayerState{Bounds for - smt_launcher#902 parentId=899}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher]#903 parentId=902 relativeParentId=899 z=-2}"
+            ]
+          }
+        ],
+        "color_screen": {
+          "frames": 115,
+          "candidates": 25,
+          "note": "Color screening only; not exact exposure duration or physical-panel proof."
+        }
+      }
+    ],
+    "background_checks": [
+      {
+        "start_ns": 8752202999999,
+        "end_ns": 8753902521400,
+        "duration_ms": 1699.521,
+        "gl_draw_or_swap_count": 0
+      },
+      {
+        "start_ns": 8755463000000,
+        "end_ns": 8756084055300,
+        "duration_ms": 621.055,
+        "gl_draw_or_swap_count": 0
+      },
+      {
+        "start_ns": 8757740000000,
+        "end_ns": 8758419780000,
+        "duration_ms": 679.78,
+        "gl_draw_or_swap_count": 0
+      }
+    ],
+    "initial_verification": {
+      "static_top_row_roi": [
+        0,
+        140,
+        1080,
+        650
+      ],
+      "changed_pixels": 0,
+      "max_channel_error": 0,
+      "mean_channel_error": 0.0,
+      "changed_apk_entries": [
+        "META-INF/MANIFEST.MF",
+        "META-INF/SMARTISA.RSA",
+        "META-INF/SMARTISA.SF",
+        "classes.dex",
+        "classes2.dex"
+      ]
+    },
+    "restored": {
+      "apk_sha256": "4944e939adbe8e75c78c0a3cdda06ddf325f852722baff01309abdddfeea53ea",
+      "navigation": "2",
+      "log_tag": "",
+      "source_restored": {
+        "launcher/tools/java/com/smartisanos/launcher/gesture/LauncherHomeCompat.java": "5acf9b27d3360149cba9f55afba6136b77d8564e037975a17f533695bb1760ab",
+        "launcher/smali/com/smartisanos/launcher/view/SMGLSurfaceView.smali": "192ecbb3e6db8407df2b1bf0ca9467ac564f28c558059a7bd8052f43c4ff92fb"
+      }
+    }
+  },
+  "surface_draw_sync_experiment": {
+    "device": "emulator-5554 Android16/API36",
+    "navigation_mode": 2,
+    "theme": "Black ordinary theme",
+    "time_origin": "Resume=0 for trace; video PTS is separate and not absolutely calibrated",
+    "scope": "Only emulator operated; no OPPO/vivo APK installation or navigation changes",
+    "candidate1_sha256": "d3ca89874fb465712ad3d55ce477574c676b79524fe8082c5481d96a6cbfecae",
+    "candidate2_identity": {
+      "candidate_apk_sha256": "efdeb6230f6e9dd2e79b08a34fd8bf4f4af1b3b227f2d7be04bc6f6f646cbc31",
+      "pid_at_end": "13251",
+      "navigation_mode": "2"
+    },
+    "offline_assertions": 150,
+    "after_swap_outcome": "Both groups 3/3 return HOME and visually expose system wallpaper; no elimination",
+    "resize_outcome": "Baseline 3/3 and three strict APP->HOME candidate returns expose wallpaper; UI wait removed, no elimination",
+    "exclusions": [
+      {
+        "group": "platform-order",
+        "round": 2,
+        "reason": "200ms gesture did not return HOME; replaced by quick baseline group"
+      },
+      {
+        "group": "resize-sync-on",
+        "round": 0,
+        "reason": "No HOME return; no candidate redraw callback"
+      },
+      {
+        "group": "resize-sync-on-repeat",
+        "round": 0,
+        "reason": "Overview screenshot/select controls visible during return; kept as auxiliary sample, excluded strict APP->HOME comparison"
+      }
+    ],
+    "groups": [
+      {
+        "label": "platform-order-quick",
+        "pids": [
+          "10772"
+        ],
+        "gesture_duration_ms": 100,
+        "samples_home": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "timeline": [
+          {
+            "redraw_request_ms": 189.49,
+            "platform_callback_ms": 287.428,
+            "redraw_finish_ms": 287.687,
+            "next_egl_swap_end_ms": 361.512,
+            "visible_ms": 392.137
+          },
+          {
+            "redraw_request_ms": 127.075,
+            "platform_callback_ms": 240.714,
+            "redraw_finish_ms": 241.174,
+            "next_egl_swap_end_ms": 270.091,
+            "visible_ms": 353.658
+          },
+          {
+            "redraw_request_ms": 152.401,
+            "platform_callback_ms": 286.489,
+            "redraw_finish_ms": 286.615,
+            "next_egl_swap_end_ms": 355.372,
+            "visible_ms": 469.432
+          }
+        ],
+        "video_candidate_intervals": [
+          [
+            1.475989,
+            1.626244,
+            4
+          ],
+          [
+            4.515811,
+            4.765989,
+            5
+          ],
+          [
+            7.684711,
+            8.097,
+            9
+          ]
+        ]
+      },
+      {
+        "label": "after-swap-quick",
+        "pids": [
+          "10772"
+        ],
+        "gesture_duration_ms": 100,
+        "samples_home": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "timeline": [
+          {
+            "redraw_request_ms": 147.702,
+            "platform_callback_ms": 250.577,
+            "redraw_finish_ms": 315.187,
+            "next_egl_swap_end_ms": 314.454,
+            "visible_ms": 432.746
+          },
+          {
+            "redraw_request_ms": 154.134,
+            "platform_callback_ms": 225.1,
+            "redraw_finish_ms": 269.658,
+            "next_egl_swap_end_ms": 269.349,
+            "visible_ms": 419.417
+          },
+          {
+            "redraw_request_ms": 169.453,
+            "platform_callback_ms": 294.91,
+            "redraw_finish_ms": 316.329,
+            "next_egl_swap_end_ms": 316.034,
+            "visible_ms": 421.964
+          }
+        ],
+        "video_candidate_intervals": [
+          [
+            1.264544,
+            1.626911,
+            7
+          ],
+          [
+            4.549311,
+            4.812778,
+            6
+          ],
+          [
+            7.633767,
+            7.984844,
+            8
+          ]
+        ]
+      },
+      {
+        "label": "resize-sync-baseline",
+        "pids": [
+          "13251"
+        ],
+        "gesture_duration_ms": 100,
+        "samples_home": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "timeline": [
+          {
+            "surface_size_callback_ms": 79.088,
+            "redraw_request_ms": 205.909,
+            "size_to_redraw_ms": 126.821,
+            "resize_apply_ms": null,
+            "redraw_finish_ms": 302.382,
+            "first_visible_buffer_ms": 473.918
+          },
+          {
+            "surface_size_callback_ms": 36.833,
+            "redraw_request_ms": 133.068,
+            "size_to_redraw_ms": 96.235,
+            "resize_apply_ms": null,
+            "redraw_finish_ms": 258.934,
+            "first_visible_buffer_ms": 373.21
+          },
+          {
+            "surface_size_callback_ms": 75.578,
+            "redraw_request_ms": 178.593,
+            "size_to_redraw_ms": 103.015,
+            "resize_apply_ms": null,
+            "redraw_finish_ms": 268.961,
+            "first_visible_buffer_ms": 448.913
+          }
+        ],
+        "video_candidate_intervals": [
+          [
+            1.3019,
+            1.642233,
+            7
+          ],
+          [
+            4.479322,
+            4.770756,
+            7
+          ],
+          [
+            7.810633,
+            8.263267,
+            10
+          ]
+        ]
+      },
+      {
+        "label": "resize-sync-on",
+        "pids": [
+          "13251"
+        ],
+        "gesture_duration_ms": 100,
+        "samples_home": [
+          true,
+          false,
+          true,
+          true
+        ],
+        "timeline": [
+          {
+            "surface_size_callback_ms": 81.403,
+            "redraw_request_ms": 81.87,
+            "size_to_redraw_ms": 0.467,
+            "resize_apply_ms": 211.178,
+            "redraw_finish_ms": 246.248,
+            "first_visible_buffer_ms": 423.286
+          },
+          {
+            "surface_size_callback_ms": 49.47,
+            "redraw_request_ms": 50.207,
+            "size_to_redraw_ms": 0.737,
+            "resize_apply_ms": 177.442,
+            "redraw_finish_ms": 217.403,
+            "first_visible_buffer_ms": 455.689
+          }
+        ],
+        "video_candidate_intervals": [
+          [
+            4.098833,
+            4.463944,
+            8
+          ],
+          [
+            7.401211,
+            7.823833,
+            9
+          ]
+        ]
+      },
+      {
+        "label": "resize-sync-on-repeat",
+        "pids": [
+          "13251"
+        ],
+        "gesture_duration_ms": 100,
+        "samples_home": [
+          true,
+          true,
+          true
+        ],
+        "timeline": [
+          {
+            "surface_size_callback_ms": 120.293,
+            "redraw_request_ms": 120.787,
+            "size_to_redraw_ms": 0.494,
+            "resize_apply_ms": 203.983,
+            "redraw_finish_ms": 254.4,
+            "first_visible_buffer_ms": 421.566
+          },
+          {
+            "surface_size_callback_ms": 87.258,
+            "redraw_request_ms": 89.24,
+            "size_to_redraw_ms": 1.982,
+            "resize_apply_ms": 166.557,
+            "redraw_finish_ms": 203.244,
+            "first_visible_buffer_ms": 390.735
+          }
+        ],
+        "video_candidate_intervals": [
+          [
+            1.290233,
+            1.659233,
+            8
+          ],
+          [
+            4.451611,
+            4.795178,
+            7
+          ]
+        ]
+      }
+    ],
+    "disposition": "Behavioral experiment retired to build/home-draw-sync-20261013/candidate-source; formal source retains only default-off platform redraw timing markers",
+    "restored_emulator_sha256": "4944e939adbe8e75c78c0a3cdda06ddf325f852722baff01309abdddfeea53ea",
+    "limits": "Window visibility and EGL swap timing do not prove panel presentation. Small emulator samples do not establish OPPO outcome or stable acceleration. Vivo/theme/unlock/high refresh/long-run GPU tests not performed for candidate."
+  }
+}

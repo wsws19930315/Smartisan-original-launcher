@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="author_homepage_open_failed">Unable to open the Bilibili profile.</string>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="donate_title">支持开发者</string>
+    <string name="donate_description">如果你喜欢锤子桌面的体验，欢迎请开发者喝杯咖啡。\n你的支持，是支持作者继续打磨它的一份动力。</string>
+    <string name="donate_wechat">微信打赏</string>
+    <string name="donate_alipay">支付宝打赏</string>
+    <string name="donate_footer">备注你的名字，他将出现在power by名单中，感谢支持！</string>
+    <string name="donate_wechat_code">微信打赏收款码</string>
+    <string name="donate_alipay_code">支付宝打赏收款码</string>
+    <string name="donate_image_error">无法加载本地收款码，请返回后重新打开本页。</string>
+    <string name="donate_page_error">无法打开页面，请返回后重试。</string>
+</resources>

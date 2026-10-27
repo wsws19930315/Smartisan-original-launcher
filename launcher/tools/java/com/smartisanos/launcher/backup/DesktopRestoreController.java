@@ -11,6 +11,7 @@ import com.smartisanos.launcher.reload.LauncherColdReloadCoordinator;
 import com.smartisanos.launcher.theme.MaintainedLauncherSettingsHost;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
@@ -188,12 +189,13 @@ public final class DesktopRestoreController {
             DesktopBackupController.CancellationToken cancel) {
         RestoreOperationJournal journal = new RestoreOperationJournal(context);
         RestoreOperationJournal.Entry entry;
-        File rollbackDirectory = new File(new File(context.getFilesDir(), "backup_restore"), "rollback_latest");
+        File rollbackDirectory = pendingRollbackDirectory(context, restore.token);
         try {
             entry = journal.read();
             if (!restore.token.equals(entry.operationToken) || entry.state != RestoreOperationJournal.State.READY)
                 throw new RestoreException("RESTORE_INTERRUPTED");
             state(restore.listener, "CREATING_ROLLBACK", true);
+            entry.rollbackPath = new File(rollbackDirectory, "archive.slauncherbackup").getAbsolutePath();
             journal.write(entry, RestoreOperationJournal.State.CREATING_ROLLBACK, null);
             BackupFileUtils.deleteRecursively(rollbackDirectory);
             BackupFileUtils.ensureDirectory(new File(rollbackDirectory, "icons/custom"));
@@ -202,13 +204,13 @@ public final class DesktopRestoreController {
             cancel.throwIfCancelled();
             BackupManifest manifest = BackupManifest.create(context, readGridMode(context));
             org.json.JSONObject settings = PreferenceBackupCodec.encode(context);
-            org.json.JSONObject theme = ThemeBackupCodec.encode(context);
+            org.json.JSONObject theme = ThemeBackupCodec.encode(context, rollbackDirectory, cancel);
             org.json.JSONObject icons = IconBackupCodec.encode(context,
                     new File(rollbackDirectory, "icons/custom"));
             org.json.JSONObject shortcutIcons = ShortcutIconBackupCodec.encode(context, layout.value,
                     new File(rollbackDirectory, "icons/shortcuts"));
             org.json.JSONObject portableSources = RestoreIconSourceReconciler.encodePortableSources(
-                    context, new File(rollbackDirectory, "icons/sources"));
+                    context, new File(rollbackDirectory, "icons/sources"), layout.value, icons);
             File rollbackArchive = BackupArchiveWriter.write(rollbackDirectory, manifest,
                     layout.value, settings, theme, icons, shortcutIcons, portableSources, cancel);
             BackupValidator.validateAndExtract(rollbackArchive, new File(rollbackDirectory, "verified"));
@@ -401,7 +403,10 @@ public final class DesktopRestoreController {
         PreferenceBackupCodec.restore(context, backup.settings);
         String themePackage = backup.theme.optString("themePackage", "");
         if (!ThemeBackupCodec.isThemePackageAvailable(context, themePackage)) {
-            context.getSharedPreferences("launcher_settings", 0).edit().putString("launcher_theme", oldTheme).commit();
+            if (!context.getSharedPreferences("launcher_settings", 0).edit()
+                    .putString("launcher_theme", oldTheme).commit()) {
+                throw new IOException("Theme fallback preference commit failed");
+            }
         }
         journal.write(entry, RestoreOperationJournal.State.APPLYING_ICONS, null);
         IconBackupCodec.restore(context, backup.icons, backup.extractedRoot);
@@ -412,6 +417,7 @@ public final class DesktopRestoreController {
         Log.i(TAG, "RESTORE_CACHE_INVALIDATED oldRasterVersion=raster:v1-v7 newRasterVersion=raster:v8"
                 + " ordinaryTableIcons=cleared shortcutSource=preserved");
         journal.write(entry, RestoreOperationJournal.State.APPLYING_THEME, null);
+        ThemeBackupCodec.restoreWallpaper(context, backup.theme, backup.extractedRoot);
         journal.write(entry, RestoreOperationJournal.State.VERIFYING, null);
         LayoutSnapshotExporter.exportStableSnapshot(context);
         BackupFileUtils.deleteRecursively(extraction);
@@ -437,6 +443,9 @@ public final class DesktopRestoreController {
                 try { result = finishRestoreAfterFirstFrame(app, token, reason); }
                 catch (RestoreOperationJournal.JournalException error) {
                     result = error.errorCode;
+                    deferFailure(app, result, error);
+                } catch (RollbackSnapshotException error) {
+                    result = "RESTORE_ROLLBACK_CREATE_FAILED";
                     deferFailure(app, result, error);
                 } catch (IOException error) {
                     result = "RESTORE_WRITER_LOCK_FAILED";
@@ -475,14 +484,7 @@ public final class DesktopRestoreController {
             // launcher toast here rather than deferring a dialog until Backup & Restore
             // is opened again. The online icon cache is disposable, so start its existing
             // background hydration only after this frame is visible.
-            journal.write(entry, RestoreOperationJournal.State.CLEANING, null);
-            // Reset must be durable before deleting the last undo archive or reporting success.
-            journal.reset();
-            BackupFileUtils.deleteRecursively(new File(entry.stagingPath));
-            BackupFileUtils.deleteRecursively(new File(new File(context.getCacheDir(), "restore_apply"), token));
-            if (entry.undo && entry.rollbackPath.length() != 0) {
-                BackupFileUtils.deleteRecursively(new File(entry.rollbackPath).getParentFile());
-            }
+            finishRestoreFiles(context, journal, entry);
             if (prepared != null && token.equals(prepared.token)) prepared = null;
             Log.i(TAG, "RESTORE_COMPLETE token=" + shortToken(token) + " reason=" + reason);
             return resultCode;
@@ -499,6 +501,73 @@ public final class DesktopRestoreController {
     static File rollbackArchive(Context context) {
         return new File(new File(new File(context.getFilesDir(), "backup_restore"), "rollback_latest"),
                 "archive.slauncherbackup");
+    }
+
+    private static File pendingRollbackDirectory(Context context, String token) {
+        return new File(rollbackArchive(context).getParentFile(), "preparing_" + token);
+    }
+
+    /** Called only while the existing cross-process restore writer lease is held. */
+    static void finishRestoreFiles(Context context, RestoreOperationJournal journal,
+            RestoreOperationJournal.Entry entry) throws IOException {
+        if (entry.state == RestoreOperationJournal.State.COMMITTED && !entry.undo) {
+            publishRollbackSnapshot(context, entry);
+        }
+        // CLEANING is durable only after publishing. Startup can finish cleanup
+        // without republishing an already activated archive.
+        journal.write(entry, RestoreOperationJournal.State.CLEANING, null);
+        journal.reset();
+        BackupFileUtils.deleteRecursively(new File(entry.stagingPath));
+        BackupFileUtils.deleteRecursively(new File(new File(context.getCacheDir(), "restore_apply"),
+                entry.operationToken));
+        if (entry.undo && entry.rollbackPath.length() != 0) {
+            BackupFileUtils.deleteRecursively(new File(entry.rollbackPath).getParentFile());
+        } else {
+            discardPendingRollback(context, entry);
+        }
+    }
+
+    static void discardPendingRollback(Context context, RestoreOperationJournal.Entry entry) {
+        File pending = pendingRollbackDirectory(context, entry.operationToken);
+        // Legacy journals point directly at rollback_latest. Never delete that
+        // archive when discarding a cancelled, failed or rolled-back new restore.
+        if (new File(pending, "archive.slauncherbackup").getAbsolutePath().equals(entry.rollbackPath)) {
+            BackupFileUtils.deleteRecursively(pending);
+        }
+    }
+
+    private static void publishRollbackSnapshot(Context context, RestoreOperationJournal.Entry entry)
+            throws RollbackSnapshotException {
+        File source = new File(entry.rollbackPath);
+        File target = rollbackArchive(context);
+        if (source.equals(target)) return; // Legacy completed operation.
+        try {
+            File expected = new File(pendingRollbackDirectory(context, entry.operationToken),
+                    "archive.slauncherbackup");
+            if (!expected.equals(source) || !source.isFile()) {
+                throw new IOException("Missing pending rollback snapshot");
+            }
+            BackupFileUtils.ensureDirectory(target.getParentFile());
+            File staged = new File(source.getParentFile(), "publish.tmp");
+            try (FileInputStream input = new FileInputStream(source);
+                    FileOutputStream output = new FileOutputStream(staged)) {
+                BackupFileUtils.copy(input, output, BackupValidator.MAX_ARCHIVE_BYTES, null);
+                output.getFD().sync();
+            }
+            if (!BackupFileUtils.sha256(source).equals(BackupFileUtils.sha256(staged))) {
+                throw new IOException("Rollback snapshot publication verification failed");
+            }
+            // Keep the candidate for recovery until the journal reset is durable.
+            // POSIX rename on this same filesystem replaces the target atomically;
+            // unlike old AtomicFile, a failed rename never truncates the old archive.
+            android.system.Os.rename(staged.getAbsolutePath(), target.getAbsolutePath());
+        } catch (Exception error) {
+            throw new RollbackSnapshotException(error);
+        }
+    }
+
+    static final class RollbackSnapshotException extends IOException {
+        RollbackSnapshotException(Throwable cause) { super("Rollback snapshot publication failed", cause); }
     }
 
     public static boolean hasUndoSnapshot(Context context) {
@@ -565,6 +634,7 @@ public final class DesktopRestoreController {
     }
 
     public static String restoreMessage(String code) {
+        if ("RESTORE_ROLLBACK_CREATE_FAILED".equals(code)) return "无法保存撤销快照，已保留恢复记录，请检查存储空间后重试。";
         if ("RESTORE_WRITER_LOCK_FAILED".equals(code)) return "无法锁定恢复数据，已停止恢复并保留原文件。";
         if ("RESTORE_INTERRUPTED".equals(code)) return "上次恢复尚未完成，请先重新打开桌面。";
         if ("RESTORE_JOURNAL_CORRUPT".equals(code))

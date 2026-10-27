@@ -1,6 +1,8 @@
 build/
 *.apk
 *.png
+!launcher/tools/maintained_settings_res/res/drawable-nodpi/donate_wechat.png
+!launcher/tools/maintained_settings_res/res/drawable-nodpi/donate_alipay.png
 !launcher/assets/Textures/1080p/status_bar.png
 !launcher/assets/Textures/1080p/setting_button/editBtn_bg.png
 !launcher/assets/Textures/1080p/setting_button/editBtn_gear.png

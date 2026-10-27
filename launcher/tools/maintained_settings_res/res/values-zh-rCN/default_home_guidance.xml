@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="default_home_page_title">设置默认桌面</string>
+    <string name="default_home_row_title">默认桌面</string>
+    <string name="default_home_recheck_title">重新检测</string>
+    <string name="default_home_tips_title">设置提示</string>
+    <string name="default_home_status_confirmed">锤子桌面</string>
+    <string name="default_home_status_unset">尚未设置</string>
+    <string name="default_home_status_unknown">无法确认</string>
+    <string name="default_home_message_confirmed">锤子桌面已是默认桌面。</string>
+    <string name="default_home_message_unset">系统尚未确认默认桌面设置生效。点击“默认桌面”，在系统页面选择锤子桌面，再返回本页。</string>
+    <string name="default_home_message_unknown">系统暂时无法可靠确认默认桌面，请在系统页面核对，或点击“重新检测”。</string>
+    <string name="default_home_help_generic">通常可在系统设置的“应用 → 默认应用 → 桌面／主屏幕”中选择。菜单名称可能随系统版本变化。</string>
+    <string name="default_home_help_vivo">VIVO/IQOO/OPPO 手机要去，系统设置中搜索"更换系统桌面"，打开"允许更换桌面"，关闭"点击主屏幕锁定系统桌面”，再重新设置默认桌面。其他手机可以搜索对应安卓版本的cts组件解决。</string>
+    <string name="default_home_help_oppo">可搜索“默认桌面”或“更换系统桌面”。若系统提供切换限制，再按实际说明调整；不同版本的入口可能位于应用管理或默认应用中。</string>
+    <string name="default_home_page_unavailable">无法打开设置页面，请返回后重试。</string>
+    <string name="default_home_save_failed">无法保存本次设置状态，请重试。</string>
+    <string name="default_home_open_failed">无法打开系统设置，请手动打开系统设置并搜索“默认桌面”。</string>
+</resources>

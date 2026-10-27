@@ -41,6 +41,7 @@ public final class QuickDesktopCaptureGateProbe {
     }
 
     private static int touch(int action, float x, float y) {
+        com.smartisanos.launcher.view.Eb.publishProbeFrame();
         MotionEvent e = event(action, x, y);
         try { return QuickDesktopController.onTouch(e, 1); } finally { e.recycle(); }
     }
@@ -60,6 +61,34 @@ public final class QuickDesktopCaptureGateProbe {
         Field f = QuickDesktopController.class.getDeclaredField("openAfterBackgroundReady");
         f.setAccessible(true);
         return f.getBoolean(null);
+    }
+
+    private static Object controllerField(String name) throws Exception {
+        Field field = QuickDesktopController.class.getDeclaredField(name);
+        field.setAccessible(true);
+        return field.get(null);
+    }
+
+    private static int pointerDown(int count) {
+        MotionEvent.PointerProperties[] properties = new MotionEvent.PointerProperties[count];
+        MotionEvent.PointerCoords[] coordinates = new MotionEvent.PointerCoords[count];
+        for (int i = 0; i < count; i++) {
+            properties[i] = new MotionEvent.PointerProperties();
+            properties[i].id = i;
+            properties[i].toolType = MotionEvent.TOOL_TYPE_FINGER;
+            coordinates[i] = new MotionEvent.PointerCoords();
+            coordinates[i].x = 600 + i * 20;
+            coordinates[i].y = 800 + i * 20;
+            coordinates[i].pressure = 1;
+            coordinates[i].size = 1;
+        }
+        long now = SystemClock.uptimeMillis();
+        MotionEvent event = MotionEvent.obtain(now, now, MotionEvent.ACTION_POINTER_DOWN
+                | ((count - 1) << MotionEvent.ACTION_POINTER_INDEX_SHIFT), count,
+                properties, coordinates, 0, 0, 1, 1, 0, 0,
+                android.view.InputDevice.SOURCE_TOUCHSCREEN, 0);
+        try { return QuickDesktopController.onTouch(event, .5f); }
+        finally { event.recycle(); }
     }
 
     public static void main(String[] args) throws Exception {
@@ -136,6 +165,7 @@ public final class QuickDesktopCaptureGateProbe {
         com.smartisanos.launcher.view.Eb.editing=false;
         touch(MotionEvent.ACTION_DOWN,100,800);
         com.smartisanos.launcher.view.Eb.displayMode=8;
+        com.smartisanos.launcher.view.Eb.publishProbeFrame();
         check(!QuickDesktopController.canRevealFromRoot(), "mode change kept old eligibility");
         QuickDesktopController.requestShow(); touch(MotionEvent.ACTION_UP,600,800);
         check(QuickDesktopBackgroundCapture.requests==0, "mode change captured");
@@ -194,6 +224,7 @@ public final class QuickDesktopCaptureGateProbe {
 
         touch(MotionEvent.ACTION_DOWN,100,800); QuickDesktopController.requestShow(); progress(600);
         com.smartisanos.launcher.view.Eb.displayMode=8;
+        com.smartisanos.launcher.view.Eb.publishProbeFrame();
         QuickDesktopBackgroundCapture.ready();
         check(host.getOpenProgress()==0 && !ready(), "late background covered overview");
         com.smartisanos.launcher.view.Eb.displayMode=12;
@@ -222,6 +253,119 @@ public final class QuickDesktopCaptureGateProbe {
         touch(MotionEvent.ACTION_DOWN,100,800);
         check(QuickDesktopController.canRevealFromRoot(), "window-time cancellation blocked next gesture");
         touch(MotionEvent.ACTION_CANCEL,100,800);
+
+        // Transfer a half-open root gesture to the original multi-pointer owner.
+        for (int pointers = 2; pointers <= 4; pointers++) {
+            for (boolean backgroundReady : new boolean[]{false, true}) {
+                touch(MotionEvent.ACTION_DOWN, 100, 800);
+                QuickDesktopController.onRootGestureCancelled();
+                QuickDesktopController.requestShow();
+                progress(600);
+                if (backgroundReady) QuickDesktopBackgroundCapture.ready();
+                for (int count = 2; count <= pointers; count++) {
+                    check(pointerDown(count) == 0, "multi-pointer owner did not receive event");
+                }
+                check(host.getOpenProgress() == 0 && !ready(), "multi-pointer retained reveal");
+                check(!QuickDesktopController.canRevealFromRoot(), "multi-pointer retained opening");
+                check(!pendingOpen(), "multi-pointer retained delayed opening");
+                check(controllerField("openingVelocityTracker") == null, "multi-pointer retained tracker");
+                check(!QuickDesktopController.hasCancelledRootGesture(), "multi-pointer inherited old cancel owner");
+                QuickDesktopBackgroundCapture.ready();
+                QuickDesktopController.onBackgroundReady(host);
+                check(host.getOpenProgress() == 0 && !ready(), "late frame reopened after multi-pointer");
+                check(touch(MotionEvent.ACTION_MOVE, 650, 800) == 0, "multi-pointer MOVE was swallowed");
+                check(touch(MotionEvent.ACTION_UP, 650, 800) == 0, "multi-pointer terminal was swallowed");
+                touch(MotionEvent.ACTION_DOWN, 100, 800);
+                check(QuickDesktopController.canRevealFromRoot(), "multi-pointer blocked next DOWN");
+                touch(MotionEvent.ACTION_CANCEL, 100, 800);
+            }
+        }
+
+        // Editing, Folder mode and leaving page zero must revoke a half-open candidate.
+        for (int invalidOwner = 0; invalidOwner < 3; invalidOwner++) {
+            for (boolean backgroundReady : new boolean[]{false, true}) {
+                touch(MotionEvent.ACTION_DOWN, 100, 800);
+                QuickDesktopController.onRootGestureCancelled();
+                QuickDesktopController.requestShow(); progress(600);
+                if (backgroundReady) QuickDesktopBackgroundCapture.ready();
+                com.smartisanos.launcher.view.Eb.editing = invalidOwner == 0;
+                com.smartisanos.launcher.view.Eb.displayMode = invalidOwner == 1 ? 8 : 12;
+                com.smartisanos.launcher.view.Eb.pageIndex = invalidOwner == 2 ? 1 : 0;
+                check(touch(MotionEvent.ACTION_MOVE, 650, 800) == 2, "revoked MOVE reached cancelled GL target");
+                check(host.getOpenProgress() == 0 && !ready(), "invalid owner kept half-open host");
+                check(!QuickDesktopController.canRevealFromRoot(), "invalid owner retained eligibility");
+                check(controllerField("openingVelocityTracker") == null, "invalid owner retained tracker");
+                QuickDesktopBackgroundCapture.ready();
+                QuickDesktopController.onBackgroundReady(host);
+                check(host.getOpenProgress() == 0 && !ready(), "late frame covered new workspace owner");
+                check(touch(MotionEvent.ACTION_UP, 650, 800) == 1, "revoked terminal reached cancelled GL target");
+                touch(MotionEvent.ACTION_DOWN, 100, 800);
+                check(!QuickDesktopController.hasCancelledRootGesture(), "new owner inherited old CANCEL");
+                check(!QuickDesktopController.canRevealFromRoot(), "new owner lost exclusion");
+                touch(MotionEvent.ACTION_CANCEL, 100, 800);
+                com.smartisanos.launcher.view.Eb.editing = false;
+                com.smartisanos.launcher.view.Eb.displayMode = 12;
+                com.smartisanos.launcher.view.Eb.pageIndex = 0;
+                touch(MotionEvent.ACTION_DOWN, 100, 800);
+                check(QuickDesktopController.canRevealFromRoot(), "workspace return blocked next DOWN");
+                touch(MotionEvent.ACTION_CANCEL, 100, 800);
+            }
+        }
+
+        for (int lifecycle = 0; lifecycle < 5; lifecycle++) {
+            for (boolean backgroundReady : new boolean[]{false, true}) {
+                touch(MotionEvent.ACTION_DOWN, 100, 800);
+                QuickDesktopController.onRootGestureCancelled();
+                QuickDesktopController.requestShow(); progress(600);
+                if (backgroundReady) QuickDesktopBackgroundCapture.ready();
+                if (lifecycle == 0) QuickDesktopController.onLauncherStopped();
+                if (lifecycle == 1) QuickDesktopController.onHomeIntent();
+                if (lifecycle == 2) {
+                    QuickDesktopController.markActionLaunchPending("probe-covered");
+                    QuickDesktopController.onLauncherStopped();
+                }
+                if (lifecycle == 3) {
+                    QuickDesktopController.markSearchLaunchPending("probe-search");
+                    QuickDesktopController.onSearchSurfaceReady();
+                }
+                if (lifecycle == 4) {
+                    QuickDesktopController.markActionLaunchPending("probe-no-stop");
+                    QuickDesktopController.onLauncherResumed();
+                }
+                check(host.getOpenProgress() == 0 && !ready(), "lifecycle retained host");
+                check(!pendingOpen(), "lifecycle retained delayed open");
+                check(controllerField("openingVelocityTracker") == null, "lifecycle retained tracker");
+                check(!((Boolean) controllerField("actionLaunchPending")), "lifecycle retained action");
+                check(!((Boolean) controllerField("searchLaunchPending")), "lifecycle retained search");
+                QuickDesktopBackgroundCapture.ready();
+                QuickDesktopController.onBackgroundReady(host);
+                check(host.getOpenProgress() == 0 && !ready(), "late result revived covered host");
+                touch(MotionEvent.ACTION_DOWN, 100, 800);
+                check(QuickDesktopController.canRevealFromRoot(), "lifecycle blocked next DOWN");
+                touch(MotionEvent.ACTION_CANCEL, 100, 800);
+            }
+        }
+        touch(MotionEvent.ACTION_DOWN, 100, 800);
+        QuickDesktopController.requestShow(); progress(600);
+        QuickDesktopController.onLauncherResumed();
+        check(host.getOpenProgress() > 0, "ordinary resume discarded active gesture");
+        QuickDesktopController.onHomeIntent();
+        for (boolean detach : new boolean[]{false, true}) {
+            touch(MotionEvent.ACTION_DOWN, 100, 800);
+            QuickDesktopController.requestShow(); progress(600);
+            if (detach) QuickDesktopController.onHostDetached(host);
+            else QuickDesktopController.onLauncherDestroyed();
+            check(controllerField("hostView") == null, "destroy/detach retained host");
+            check(host.getOpenProgress() == 0 && !ready(), "destroy/detach retained reveal");
+            check(controllerField("openingVelocityTracker") == null, "destroy/detach retained tracker");
+            QuickDesktopController.onBackgroundReady(host);
+            check(!ready(), "detached completion revived host");
+            hostField.set(null, host);
+            rootField.set(null, new WeakReference<android.view.ViewGroup>(root));
+            touch(MotionEvent.ACTION_DOWN, 100, 800);
+            check(QuickDesktopController.canRevealFromRoot(), "replacement host blocked next DOWN");
+            touch(MotionEvent.ACTION_CANCEL, 100, 800);
+        }
 
         enabled = false;
         int requests = QuickDesktopBackgroundCapture.requests;

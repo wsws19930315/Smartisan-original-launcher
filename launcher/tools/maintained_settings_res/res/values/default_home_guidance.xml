@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="default_home_page_title">Default launcher</string>
+    <string name="default_home_row_title">Default launcher</string>
+    <string name="default_home_recheck_title">Check again</string>
+    <string name="default_home_tips_title">How to set</string>
+    <string name="default_home_status_confirmed">Smartisan Launcher</string>
+    <string name="default_home_status_unset">Not set</string>
+    <string name="default_home_status_unknown">Unconfirmed</string>
+    <string name="default_home_message_confirmed">Smartisan Launcher is your default launcher.</string>
+    <string name="default_home_message_unset">The system has not confirmed the change. Tap Default launcher, select Smartisan Launcher on the system screen, then return to this page.</string>
+    <string name="default_home_message_unknown">The system cannot reliably confirm the default launcher. Check it on the system screen or tap Check again.</string>
+    <string name="default_home_help_generic">In Settings, look under Apps → Default apps → Home app. Menu names vary by system version.</string>
+    <string name="default_home_help_vivo">In Settings, search for "Default launcher" or "Change system launcher". If your system offers a launcher switching restriction, follow its instructions to allow the change. Options vary by version.</string>
+    <string name="default_home_help_oppo">In Settings, search for "Default launcher" or "Change system launcher". The option may be under App management or Default apps. Adjust switching restrictions only if your system provides them.</string>
+    <string name="default_home_page_unavailable">Could not open this page. Go back and try again.</string>
+    <string name="default_home_save_failed">Could not save the setup state. Please try again.</string>
+    <string name="default_home_open_failed">Could not open system settings. Open Settings manually and search for "Default launcher".</string>
+</resources>

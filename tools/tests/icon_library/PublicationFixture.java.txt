@@ -1,0 +1,172 @@
+import java.util.*;
+
+/** UI/cache/IO doubles; delivery methods below are extracted verbatim from production. */
+public class IconLibrarySearchPage {
+    static int checks,failures;
+    static final int GONE=8,VISIBLE=0;
+    static void check(boolean value,String message){checks++;if(!value)throw new AssertionError(message);}
+    static class Queue {
+        final List<Runnable> tasks=new ArrayList<>();
+        void post(Runnable task){tasks.add(task);}
+        void postDelayed(Runnable task,long delay){post(task);}
+        void removeCallbacks(Runnable task){tasks.remove(task);}
+        void one(){if(tasks.isEmpty())throw new AssertionError("queue unexpectedly empty");tasks.remove(0).run();}
+        void drain(){int limit=30;while(!tasks.isEmpty()){if(--limit==0)throw new AssertionError("unbounded callbacks");one();}}
+    }
+    static class View {void setVisibility(int n){}void setOnClickListener(Object l){}int getTop(){return 0;}}
+    static class Text extends View {String value="";void setText(String s){value=s;}String getText(){return value;}}
+    static class Grid extends View {
+        int getFirstVisiblePosition(){return 0;}View getChildAt(int n){return null;}
+        void setSelection(int n){}void setSelectionFromTop(int n,int top){}void post(Runnable r){}
+    }
+    static class Search {final Text text=new Text();Text getEditText(){return text;}void setInputEnabled(boolean b){}}
+    static class Loading {final View root=new View(),progress=new View(),message=new Text();}
+    static class Cache<K,V> {final Map<K,V> values=new HashMap<>();void evictAll(){values.clear();}void put(K k,V v){values.put(k,v);}V get(K k){return values.get(k);}}
+    static class Navigation {String revision="";final Cache<String,ResultState> results=new Cache<>();}
+    static class ResultState {String revision,query;List<IconLibrarySearchIndex.Entry> rows,page;IconPackManager.SearchSnapshot packs;int first,top,pageOffset;}
+    static class Adapter {List<IconLibrarySearchIndex.Entry> rows=Collections.emptyList();int getCount(){return rows.size();}}
+    static class Activity {Activity getApplicationContext(){return this;}}
+    static class CancellationSignal {void cancel(){}}
+    static class SystemClock {static long uptimeMillis(){return 1;}}
+    static class Log {static void i(String t,String s){}static void w(String t,String s,Exception e){}}
+    static class Toast {static final int LENGTH_SHORT=0;static Toast makeText(Activity a,String s,int n){return new Toast();}void show(){}}
+    static class IconPreviewRepository {
+        static class RequestSession {}
+        final Queue index=new Queue(),metadata=new Queue();
+        boolean scheduleIndex(RequestSession s,Runnable r){index.post(r);return true;}
+        boolean scheduleMetadata(RequestSession s,Runnable r){metadata.post(r);return true;}
+        void logPipelineState(String s){}
+    }
+    static class IconLibraryCatalog {
+        static IconLibraryCatalog current;
+        final String revision="same-content-revision";
+        final List<IconLibrarySearchIndex.Entry> entries=Arrays.asList(new IconLibrarySearchIndex.Entry());
+        static IconLibraryCatalog peek(){return current;}
+        static IconLibraryCatalog load(Activity a){if(current==null)current=new IconLibraryCatalog();return current;}
+    }
+    static class IconLibrarySearchIndex {
+        static class Entry {String stableKey(){return "row";}}
+        static class Query {Query(String s){}}
+        interface Current {boolean isCurrent();}
+        static String normalize(String s){return s.trim();}
+        static List<Entry> search(List<Entry> e,String q,String c,Current test){if(searchFailure)throw new RuntimeException("fixture error");return test.isCurrent()?e:null;}
+        static boolean searchFailure;
+    }
+    static class IconPackManager {
+        static long generation,epoch;static boolean ready,failIndex;
+        static class SearchSnapshot {long generation=IconPackManager.generation,epoch=IconPackManager.epoch;}
+        static long searchGeneration(){return generation;}
+        static boolean isSearchIndexReady(IconLibraryCatalog c){return ready&&c!=null&&c==IconLibraryCatalog.peek();}
+        static boolean isSearchSnapshotCurrent(SearchSnapshot s){return s!=null&&s.generation==generation&&s.epoch==epoch;}
+        static void prepareSearchIndex(Activity a,IconPreviewRepository.RequestSession s,IconLibraryCatalog c){if(failIndex)throw new RuntimeException("fixture IO failure");ready=true;}
+        static SearchSnapshot searchDirectory(Activity a,String q,String c,CancellationSignal s){return new SearchSnapshot();}
+        static List<IconLibrarySearchIndex.Entry> readSearchPage(Activity a,SearchSnapshot s,int o,int n,CancellationSignal c){return Arrays.asList(new IconLibrarySearchIndex.Entry());}
+        static int searchFailureCount(){return 0;}
+    }
+    final Queue main=new Queue();final IconPreviewRepository repository=new IconPreviewRepository();
+    IconPreviewRepository.RequestSession session=new IconPreviewRepository.RequestSession();
+    final Activity activity=new Activity();final Search search=new Search();final Grid grid=new Grid();
+    final Text message=new Text(),resultCount=new Text();final View categories=new View();final Loading loading=new Loading();
+    final Navigation navigation=new Navigation();final Adapter adapter=new Adapter();
+    final Set<Integer> loadingPages=new HashSet<>();final Cache<Integer,List<IconLibrarySearchIndex.Entry>> packedPages=new Cache<>();
+    CancellationSignal queryCancel=new CancellationSignal();Runnable filter;
+    long directoryRequest,generation,directoryGeneration;
+    boolean directoryReady,packsReady,indexPreparing,showingResults,categoryPage,queryPending,closed,paused;
+    String appliedQuery="",category;IconLibraryCatalog directoryCatalog;IconPackManager.SearchSnapshot packed;
+    int accepted,published,errors,binds;
+    boolean active(){return !closed&&!paused;}
+    String stateKey(String q){return q;}
+    int packOffsetAt(int n){return 0;}
+    void cancelSelection(){}void releaseBindings(){}void bindVisible(){binds++;}
+    void acceptCatalog(IconLibraryCatalog c){accepted++;directoryCatalog=c;directoryReady=true;}
+    boolean restoreResultState(IconLibraryCatalog c){return false;}
+    void showDirectoryError(){errors++;}
+    void showCategories(){}void showResultCount(){}
+    IconLibrarySearchIndex.Entry entryAt(int n){return null;}
+    int onlinePositionOf(String key){return -1;}
+    void setRows(List<IconLibrarySearchIndex.Entry> rows,IconPackManager.SearchSnapshot packs,String q){published++;adapter.rows=rows;packed=packs;appliedQuery=q;queryPending=false;}
+    INITIALIZE_METHOD
+    FILTER_METHOD
+    PAGE_METHOD
+    SAVE_METHOD
+
+    static IconLibrarySearchPage fresh(){
+        IconPackManager.generation=1;IconPackManager.epoch=1;IconPackManager.ready=false;IconPackManager.failIndex=false;
+        IconLibraryCatalog.current=null;IconLibrarySearchIndex.searchFailure=false;
+        return new IconLibrarySearchPage();
+    }
+    static IconLibrarySearchPage searching(boolean packs){
+        IconLibrarySearchPage p=fresh();p.directoryCatalog=IconLibraryCatalog.load(p.activity);p.directoryReady=true;
+        p.packsReady=packs;IconPackManager.ready=packs;p.search.text.value="chrome";return p;
+    }
+    static void invalidated(){IconLibraryCatalog.current=null;IconPackManager.generation++;IconPackManager.ready=false;}
+    static void caseRun(String name,Runnable test){try{test.run();System.out.println("PASS "+name);}catch(Throwable e){failures++;System.out.println("FAIL "+name+": "+e);}}
+    public static void main(String[] args){
+        caseRun("catalog delivery after invalidation",()->{
+            IconLibrarySearchPage p=fresh();p.initializeDirectory();p.repository.index.one();invalidated();
+            p.main.one();check(p.accepted==0,"old catalog accepted");check(p.directoryRequest==2,"new directory request missing");
+            p.main.drain();check(!p.packsReady,"old ready callback marked new generation ready");
+            p.repository.index.one();p.main.drain();check(p.accepted==1&&p.packsReady,"replacement directory did not settle");
+        });
+        caseRun("ready delivery after pack generation changes",()->{
+            IconLibrarySearchPage p=fresh();p.initializeDirectory();p.repository.index.one();p.main.one();
+            invalidated();p.main.one();check(!p.packsReady,"old completion marked current generation ready");check(p.directoryRequest==2,"ready mismatch must refresh");
+        });
+        caseRun("superseded and paused directory callbacks",()->{
+            IconLibrarySearchPage p=fresh();p.initializeDirectory();p.repository.index.one();p.directoryRequest++;p.main.drain();
+            check(p.accepted==0&&!p.packsReady,"superseded callback mutated page");
+            p=fresh();p.initializeDirectory();p.repository.index.one();p.paused=true;p.main.drain();check(p.accepted==0,"paused page received catalog");
+        });
+        caseRun("owner replacement drops queued catalog",()->{
+            IconLibrarySearchPage p=fresh();p.initializeDirectory();p.repository.index.one();p.session=new IconPreviewRepository.RequestSession();p.main.drain();
+            check(p.accepted==0&&!p.packsReady&&p.directoryRequest==1,"old owner callback changed new session");
+        });
+        caseRun("obsolete failure refreshes and ordinary IO does not retry",()->{
+            IconLibrarySearchPage p=fresh();IconPackManager.failIndex=true;p.initializeDirectory();p.repository.index.one();p.main.one();invalidated();p.main.one();
+            check(p.directoryRequest==2,"old failure did not refresh changed directory");
+            p=fresh();IconPackManager.failIndex=true;p.initializeDirectory();p.repository.index.one();p.main.drain();
+            check(p.directoryRequest==1&&!p.indexPreparing,"ordinary IO failure must settle without automatic retry");
+        });
+        caseRun("online-only query invalidated before MAIN",()->{
+            IconLibrarySearchPage p=searching(false);p.scheduleFilter(true,false);p.main.one();p.repository.metadata.one();invalidated();p.main.one();
+            check(p.published==0,"old online rows published while packs not ready");check(p.directoryRequest==1,"stale online query did not request fresh directory");
+        });
+        caseRun("pack query epoch changes before MAIN",()->{
+            IconLibrarySearchPage p=searching(true);p.scheduleFilter(true,false);p.main.one();p.repository.metadata.one();IconPackManager.epoch++;p.main.one();
+            check(p.published==0,"stale pack snapshot published");
+        });
+        caseRun("same revision new catalog identity",()->{
+            IconLibrarySearchPage p=searching(false);p.scheduleFilter(true,false);p.main.one();p.repository.metadata.one();IconLibraryCatalog.current=new IconLibraryCatalog();p.main.one();
+            check(p.published==0,"new same-revision catalog cannot bless old query rows");
+        });
+        caseRun("valid and superseded queries",()->{
+            IconLibrarySearchPage p=searching(true);p.scheduleFilter(true,false);p.main.one();p.repository.metadata.one();p.main.one();check(p.published==1,"valid query dropped");
+            p=searching(true);p.scheduleFilter(true,false);p.main.one();p.repository.metadata.one();p.generation++;p.main.one();check(p.published==0&&p.directoryRequest==0,"superseded query must quietly drop");
+        });
+        caseRun("query failure after invalidation",()->{
+            IconLibrarySearchPage p=searching(false);IconLibrarySearchIndex.searchFailure=true;p.scheduleFilter(true,false);p.main.one();p.repository.metadata.one();invalidated();p.main.one();
+            check(p.directoryRequest==1,"obsolete failure must refresh rather than label fresh page failed");
+        });
+        caseRun("pagination invalidated after read",()->{
+            IconLibrarySearchPage p=searching(true);p.packed=new IconPackManager.SearchSnapshot();p.requestPackPage(0);p.repository.metadata.one();IconPackManager.epoch++;p.main.one();
+            check(p.packedPages.get(0)==null&&p.binds==0,"old page bound after database epoch changed");check(p.directoryRequest==1,"stale page must refresh");
+        });
+        caseRun("valid pagination and superseded delivery",()->{
+            IconLibrarySearchPage p=searching(true);p.packed=new IconPackManager.SearchSnapshot();p.requestPackPage(0);p.repository.metadata.one();p.main.one();check(p.packedPages.get(0)!=null&&p.binds==1,"valid page dropped");
+            p=searching(true);p.packed=new IconPackManager.SearchSnapshot();p.requestPackPage(0);p.repository.metadata.one();p.generation++;p.main.one();check(p.packedPages.get(0)==null,"superseded page published");
+        });
+        caseRun("pagination catalog replaced without epoch change",()->{
+            IconLibrarySearchPage p=searching(true);p.packed=new IconPackManager.SearchSnapshot();p.requestPackPage(0);p.repository.metadata.one();IconLibraryCatalog.current=new IconLibraryCatalog();p.main.one();
+            check(p.packedPages.get(0)==null&&p.binds==0,"replaced catalog page was bound");
+        });
+        caseRun("save does not relabel stale rows with new catalog",()->{
+            IconLibrarySearchPage p=searching(true);p.showingResults=true;p.appliedQuery="chrome";p.packed=new IconPackManager.SearchSnapshot();
+            IconLibraryCatalog.current=new IconLibraryCatalog();p.saveResultState();check(p.navigation.results.values.isEmpty(),"old rows saved under new catalog revision");
+        });
+        caseRun("valid saved rows",()->{
+            IconLibrarySearchPage p=searching(true);p.showingResults=true;p.appliedQuery="chrome";p.packed=new IconPackManager.SearchSnapshot();p.saveResultState();check(p.navigation.results.values.size()==1,"valid state not saved");
+        });
+        System.out.println("PUBLICATION checks="+checks+" failedCases="+failures);
+        if(failures!=0)throw new AssertionError("stale delivery cases failed: "+failures);
+    }
+}

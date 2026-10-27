@@ -72,6 +72,10 @@
 
     invoke-virtual {v3, v2, v4, v0, v1}, Landroid/database/sqlite/SQLiteDatabase;->update(Ljava/lang/String;Landroid/content/ContentValues;Ljava/lang/String;[Ljava/lang/String;)I
 
+    move-result v0
+
+    if-lez v0, :save_icon_failed
+
     goto :goto_0
 
     .line 5
@@ -82,6 +86,14 @@
 
     invoke-virtual {v0, v2, v1, v3}, Landroid/database/sqlite/SQLiteDatabase;->insert(Ljava/lang/String;Ljava/lang/String;Landroid/content/ContentValues;)J
 
+    move-result-wide v0
+
+    const-wide/16 v2, -0x1
+
+    cmp-long v0, v0, v2
+
+    if-eqz v0, :save_icon_failed
+
     .line 6
     :goto_0
     iget-object p0, p0, Lcom/smartisanos/launcher/data/V;->result:Lcom/smartisanos/launcher/data/U;
@@ -90,5 +102,6 @@
 
     iput-boolean v0, p0, Lcom/smartisanos/launcher/data/U;->b:Z
 
+    :save_icon_failed
     return-void
 .end method

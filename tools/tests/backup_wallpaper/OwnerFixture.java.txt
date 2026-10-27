@@ -1,0 +1,17 @@
+package com.smartisanos.launcher.theme;
+import android.content.*;import android.net.Uri;import java.io.*;
+public class MaintainedLauncherSettingsHost {
+// FIELDS
+static final Object WALLPAPER_SELECTION_LOCK=new Object();
+static final java.util.concurrent.atomic.AtomicInteger WALLPAPER_PICK_GENERATION=new java.util.concurrent.atomic.AtomicInteger();
+static String selectedWallpaperUri(Context c){return c.getSharedPreferences(WALLPAPER_PREFS,0).getString(PREF_WALLPAPER_URI,"");}
+static String readTransparentPreviousTheme(Context c){return c.getSharedPreferences(WALLPAPER_PREFS,0).getString("previous","smartisan_theme_black");}
+static boolean saveTransparentPreviousTheme(Context c,String t){return c.getSharedPreferences(WALLPAPER_PREFS,0).edit().putString("previous",t).commit();}
+static void syncLauncherWallpaperUri(Context c,String u){c.getSharedPreferences(WALLPAPER_PREFS,0).edit().putString(PREF_WALLPAPER_URI,u).commit();}
+static void setLauncherWallpaperConstant(String u){}
+static void invalidateThemeWallpaperSync(){}
+static void clearStoredLauncherWallpaper(Context c){c.getSharedPreferences(WALLPAPER_PREFS,0).edit().remove(PREF_WALLPAPER_URI).putBoolean(PREF_WALLPAPER_READY,false).commit();}
+public static String selected(Context c){return selectedWallpaperUri(c);}
+public static java.util.Set<String> desktopBackupImprovedSourceIds(Context c,String p,String a){java.util.HashSet<String> ids=new java.util.HashSet<>();if(p.equals("org.example.current"))ids.add("org.example.systemalias");return ids;}
+// PRODUCTION
+}

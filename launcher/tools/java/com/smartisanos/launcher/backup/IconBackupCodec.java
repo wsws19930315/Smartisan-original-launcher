@@ -2,6 +2,7 @@ package com.smartisanos.launcher.backup;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 
@@ -35,7 +36,7 @@ public final class IconBackupCodec {
             boolean customIconValid = true;
             if (RedirectIconDB.MODE_CUSTOM.equals(mode)) {
                 customIconValid = info.iconData != null && info.iconData.length <= MAX_ICON_BYTES
-                        && BitmapFactory.decodeByteArray(info.iconData, 0, info.iconData.length) != null;
+                        && isValidImage(info.iconData, 1, Integer.MAX_VALUE);
             }
             if (RedirectIconDB.MODE_CUSTOM.equals(mode) && !customIconValid) {
                 Log.w("DesktopBackup", "BACKUP_CUSTOM_ICON_MISSING fallback=original package="
@@ -53,7 +54,7 @@ public final class IconBackupCodec {
             record.put("displayName", info.displayName == null ? "" : info.displayName);
             record.put("originalName", info.originalName == null ? "" : info.originalName);
             if (RedirectIconDB.MODE_CUSTOM.equals(mode)) {
-                String fileName = Integer.toHexString(primaryKey(info).hashCode()) + ".png";
+                String fileName = RedirectIconDB.customFileName(info.packageName, info.componentName);
                 BackupFileUtils.writeBytes(new File(customOutputDirectory, fileName), info.iconData);
                 record.put("customFile", fileName);
             }
@@ -107,10 +108,10 @@ public final class IconBackupCodec {
                     name = checkedFileName(name);
                     File source = new File(new File(extractedRoot, "icons/custom"), name);
                     byte[] data = BackupFileUtils.readBytes(source, MAX_ICON_BYTES);
-                    if (BitmapFactory.decodeByteArray(data, 0, data.length) == null) {
+                    if (!isValidImage(data, 1, Integer.MAX_VALUE)) {
                         throw new IllegalArgumentException("Invalid custom PNG");
                     }
-                    BackupFileUtils.writeBytes(new File(next, Integer.toHexString(key.hashCode()) + ".png"), data);
+                    BackupFileUtils.writeBytes(new File(next, RedirectIconDB.customFileName(pkg, cmp)), data);
                 } catch (Exception invalidCustomIcon) {
                     Log.w("DesktopBackup", "RESTORE_CUSTOM_ICON_INVALID fallback=original package=" + pkg,
                             invalidCustomIcon);
@@ -131,6 +132,28 @@ public final class IconBackupCodec {
         }
         BackupFileUtils.deleteRecursively(previous);
         RedirectIconDB.invalidateCaches();
+    }
+
+    /** Validate without retaining pixels or allocating the full custom source raster. */
+    static boolean isValidImage(byte[] data, int minimumEdge, int maximumEdge) {
+        if (data == null || data.length == 0) return false;
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(data, 0, data.length, options);
+        if (options.outWidth < minimumEdge || options.outHeight < minimumEdge
+                || options.outWidth > maximumEdge || options.outHeight > maximumEdge) return false;
+        options.inJustDecodeBounds = false;
+        options.inSampleSize = 1;
+        while (Math.max(options.outWidth, options.outHeight) / options.inSampleSize > 1024) {
+            options.inSampleSize *= 2;
+        }
+        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);
+        if (bitmap == null) return false;
+        try {
+            return bitmap.getWidth() > 0 && bitmap.getHeight() > 0;
+        } finally {
+            bitmap.recycle();
+        }
     }
 
     private static void putOptional(SharedPreferences.Editor editor, String key, String value) {
@@ -157,10 +180,6 @@ public final class IconBackupCodec {
             throw new IllegalArgumentException("Invalid icon file name");
         }
         return value;
-    }
-
-    private static String primaryKey(RedirectIconInfo info) {
-        return info.packageName + ";" + info.componentName;
     }
 
     private static boolean empty(String value) { return value == null || value.length() == 0; }

@@ -689,7 +689,18 @@
 
     move-result-object v4
 
+    # Folder app labels use Mc's immutable GO Paint generation; keep matching engine textures.
+    sget-boolean v5, Lcom/smartisanos/launcher/data/Constants;->ENABLE_LARGE_SCREEN_MODE:Z
+    if-nez v5, :rebuild_text_texture
+    sget-object v5, Lcom/smartisanos/launcher/view/Mc;->GO:Landroid/graphics/Paint;
+    invoke-static/range {v0 .. v5}, Lcom/smartisanos/launcher/theme/LauncherSettingBridge;->retainFolderLabelTexture(Ljava/lang/String;Landroid/graphics/Paint;IILjava/lang/Object;Landroid/graphics/Paint;)Z
+    move-result v6
+    if-nez v6, :folder_label_texture_retained
+
+    :rebuild_text_texture
     invoke-virtual {v4, v0}, Lcom/smartisanos/smengine/Ea;->ab(Ljava/lang/String;)V
+
+    :folder_label_texture_retained
 
     .line 53
     invoke-virtual {v13, v0}, Lcom/smartisanos/smengine/F;->setImageName(Ljava/lang/String;)V

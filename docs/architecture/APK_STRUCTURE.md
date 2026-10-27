@@ -39,7 +39,7 @@ E:\FANG\smartisan\smartisan-launcher-original-port
 
 | 文件 | 当前用途 | 备注 |
 | --- | --- | --- |
-| `build/launcher-signed.apk` | 当前桌面主 APK。 | 当前构建版本为 `v1.5.7 / 32`，`compileSdkVersion=36`、`minSdkVersion=23`、`targetSdkVersion=28`，可安装基线为 Android 6.0+，包含 Android 15 / Android 16；不包含独立 QuickSearch APK 和在线图标库；发布 GitHub / Gitee Release 时需要上传。 |
+| `build/launcher-signed.apk` | 当前桌面主 APK。 | 当前开发版本为 `1.6.0-T / 34`（测试版；正式发布才改为 `1.6.0`），`compileSdkVersion=36`、`minSdkVersion=23`、`targetSdkVersion=28`，可安装基线为 Android 6.0+，包含 Android 15 / Android 16；不包含独立 QuickSearch APK 和在线图标库；发布 GitHub / Gitee Release 时需要上传。 |
 | `build/theme-trans-signed.apk` | 当前透明主题安装包。 | 安装后包名为 `com.smartisanos.launcher.theme.trans`；`compileSdkVersion=36`、`minSdkVersion=23`、`targetSdkVersion=28`，Android 15 / Android 16 使用这个包；发布 GitHub / Gitee Release 时建议随主 APK 一起上传。 |
 | `original_apks/com.smartisanos.launcher.theme.trans.apk` | 原始透明主题参考包。 | `minSdkVersion=29`、`targetSdkVersion=17`；只作资源参考，不作为 Android 15 / Android 16 安装包。 |
 | `original_apks/com.smartisanos.launcher.theme.aero.apk` | 毛玻璃主题安装包 / 原版参考。 | 包名为 `com.smartisanos.launcher.theme.aero`，不能当透明主题包使用。 |
@@ -114,3 +114,8 @@ install apk:       build/theme-trans-signed.apk
 - 更新逻辑会跳过 `SmartisanQuickSearch.apk`、主题 APK、`theme-trans-signed.apk` 等非桌面主程序资产，避免误把附加包当成桌面覆盖更新包。
 - 更新包下载和安装走系统 `DownloadManager` 标准链路；安装时只使用 `DownloadManager.getUriForDownloadedFile(downloadId)` 返回的 `content://downloads/...` URI，并附加 `FLAG_GRANT_READ_URI_PERMISSION` 拉起系统安装器。不要改回私有文件路径、`file://` 或自建 `PackageInstaller.Session`。
 - 下载时会保存 Release `tag`、APK 文件名和 `downloadId`。再次检查到同一个线上版本时，`STATUS_SUCCESSFUL` 显示“安装”并复用已下载包，`RUNNING/PENDING` 显示“下载中”，失败或资产变化才清理旧缓存重新下载。
+
+
+## 当前 arm64 批量存储兼容资产
+
+launcher/lib/arm64-v8a/liblauncher_opt.so当前仅4条数组地址迁移，SHA256 0bc34c572dab1c1374a410072d1ac738a37bf3e8a15e90c17984cf425c515b08；同目录新增liblauncher_batch_compat.so，SHA256 424193dc1f19018816f5c80410ea3a74b2279ef625a3ab66676ac347f2840cf8。后者源码launcher/tools/native/launcher_batch_compat.cpp，由tools/build_native_batch_compat.py构建；和SceneNode／NativeBatchAllocation必须成组打包。普通节点原分配／原析构，只有现有三类批量写入者扩容；32位lib未变。旧6指令全节点扩容仅作历史对照，不恢复为当前方案。构建方法见 [BUILD_GUIDE](../build/BUILD_GUIDE.md#arm64-批量节点分配桥)；补丁演变、回归与未验边界只记录在[开发日志 2026-10-26](../development/DEVELOPMENT_LOG.md#2026-10-26)。

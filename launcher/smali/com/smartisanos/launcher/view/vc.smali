@@ -190,6 +190,8 @@
 .method public onDrawFrame(Ljavax/microedition/khronos/opengles/GL10;)V
     .locals 3
 
+    invoke-static {}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->rendererBegin()V
+
     invoke-static {}, Lcom/smartisanos/launcher/theme/LauncherBelowKeyguardCompat;->onRendererFrame()V
 
     # Claim before update: a request arriving mid-frame waits for the next frame,
@@ -203,7 +205,47 @@
 
     invoke-virtual {p1}, Lcom/smartisanos/launcher/view/Eb;->update()V
 
+    # Geometry getters use shared native scratch data. Publish only from this GL owner.
+    invoke-virtual {p1}, Lcom/smartisanos/launcher/view/Eb;->Gh()Lcom/smartisanos/launcher/view/b/fa;
+
+    move-result-object p1
+
+    const/4 v0, -0x1
+
+    const/4 v1, 0x0
+
+    if-eqz p1, :workspace_state_ready
+
+    invoke-virtual {p1}, Lcom/smartisanos/launcher/view/b/fa;->Dl()I
+
+    move-result v1
+
+    invoke-static {v1}, Lcom/smartisanos/launcher/quickdesktop/QuickDesktopController;->isWorkspaceMode(I)Z
+
+    move-result v0
+
+    if-eqz v0, :workspace_state_ineligible
+
+    invoke-virtual {p1}, Lcom/smartisanos/launcher/view/b/fa;->sr()I
+
+    move-result v0
+
+    goto :workspace_state_ready
+
+    :workspace_state_ineligible
+    const/4 v0, -0x1
+
+    :workspace_state_ready
+    invoke-static {p1, v0, v1}, Lcom/smartisanos/launcher/quickdesktop/QuickDesktopController;->publishWorkspaceState(Ljava/lang/Object;II)V
+
     if-eqz v2, :quick_desktop_capture_done
+
+    # Scene update may overlap cancellation on MAIN. Skip stale allocations/readback.
+    invoke-static {v2}, Lcom/smartisanos/launcher/quickdesktop/QuickDesktopBackgroundCapture;->isGlCaptureCurrent(I)Z
+
+    move-result p1
+
+    if-eqz p1, :quick_desktop_capture_done
 
     const/4 p1, 0x0
 
@@ -236,6 +278,8 @@
     invoke-static {}, Lcom/smartisanos/launcher/reload/LauncherColdReloadCoordinator;->onRendererFirstFrame()V
 
     :startup_frame_reported
+
+    invoke-static {}, Lcom/smartisanos/launcher/theme/MaintainedLauncherSettingsHost;->onLauncherResumeFrame()V
 
     .line 2
     sget-boolean p1, Lcom/smartisanos/launcher/view/vc;->my:Z
@@ -280,11 +324,17 @@
     sput-boolean p0, Lcom/smartisanos/launcher/view/vc;->my:Z
 
     :cond_1
+    invoke-static {}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onRendererFrameComplete()V
+
+    invoke-static {}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->rendererEnd()V
+
     return-void
 .end method
 
 .method public onSurfaceChanged(Ljavax/microedition/khronos/opengles/GL10;II)V
     .locals 3
+
+    invoke-static {p2, p3}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onRendererSizeChanged(II)V
 
     .line 1
     sget-boolean p1, Lcom/smartisanos/launcher/va;->DBG:Z
@@ -407,6 +457,8 @@
 
     iget p0, p0, Lcom/smartisanos/launcher/view/vc;->mHeight:I
 
+    invoke-static {p1}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onSceneCreate(Ljava/lang/Object;)V
+
     invoke-virtual {p1, v0, p0}, Lcom/smartisanos/launcher/view/Eb;->create(II)V
 
     :cond_4
@@ -472,6 +524,8 @@
 
 .method public onSurfaceCreated(Ljavax/microedition/khronos/opengles/GL10;Ljavax/microedition/khronos/egl/EGLConfig;)V
     .locals 6
+
+    invoke-static {}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onEglContextCreated()V
 
     invoke-static {}, Lcom/smartisanos/smengine/Ra;->getInstance()Lcom/smartisanos/smengine/Ra;
     move-result-object v0

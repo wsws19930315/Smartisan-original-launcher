@@ -24,7 +24,8 @@ public final class BackupOperationLock {
     }
 
     public static void release(String token) {
-        if (token != null) OWNER.compareAndSet(token, null);
+        String owner = OWNER.get();
+        if (token != null && token.equals(owner)) OWNER.compareAndSet(owner, null);
     }
 
     public static boolean isBusy() {

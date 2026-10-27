@@ -1,5 +1,7 @@
 package com.smartisanos.launcher.theme;
 
+import static com.smartisanos.launcher.theme.DefaultHomeSettingsPage.*;
+
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlarmManager;
@@ -365,8 +367,10 @@ public final class MaintainedLauncherSettingsHost {
     private static WeakReference<Activity> sPendingReloadSettingsActivity;
     private static WeakReference<View> sBackgroundRuntimePageRoot;
     private static WeakReference<Resources> sBackgroundRuntimePageResources;
+    private static volatile boolean sLauncherResumeReportPending;
     private static boolean sLauncherFirstFrameReady;
     private static boolean sDeferredLauncherTasksPosted;
+    private static volatile boolean sLauncherPageTasksPosted;
     private static final Map<Activity, PasswordPageExit> sPasswordPageExits =
             new WeakHashMap<Activity, PasswordPageExit>();
     private static final Object SETTINGS_BACK_LOCK = new Object();
@@ -628,6 +632,8 @@ public final class MaintainedLauncherSettingsHost {
         // A HOME window restored underneath Keyguard is not a user desktop return.
         if (power == null || !power.isInteractive() || keyguard == null
                 || keyguard.isKeyguardLocked()) return;
+        // A real HOME return ends the external request without delayed notifications.
+        checkDefaultHomeReturn(launcher);
         for (SettingsSession session : sSettingsSessions.values()) session.desktopReturn();
     }
 
@@ -667,19 +673,32 @@ public final class MaintainedLauncherSettingsHost {
     }
 
     public static void show(Activity activity) {
+        SharedPreferences prefs = activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE);
+        String returnPage = prefs.getString(PREF_DEFAULT_HOME_RETURN_PAGE, "");
+        Intent intent = activity.getIntent();
+        if (returnPage.startsWith("DEFAULT_HOME")
+                && (intent == null || (!intent.getBooleanExtra("launcher_show_search", false)
+                && !intent.getBooleanExtra(EXTRA_SHOW_QUICK_DESKTOP_SETTINGS, false)
+                && (intent.getAction() == null || Intent.ACTION_MAIN.equals(intent.getAction()))))) {
+            showDefaultHomePage(activity, false);
+            return;
+        }
         show(activity, -1, false);
     }
 
     public static boolean keepSettingsPageOnDesktopReturn(Activity activity, Intent intent) {
         if (activity == null || intent == null
-                || !Intent.ACTION_MAIN.equals(intent.getAction())
-                || !intent.hasCategory(Intent.CATEGORY_LAUNCHER)
                 || intent.getBooleanExtra("launcher_show_search", false)
                 || intent.getBooleanExtra(EXTRA_SHOW_QUICK_DESKTOP_SETTINGS, false)) return false;
         ViewGroup content = activity.findViewById(android.R.id.content);
         if (content == null || content.getChildCount() == 0) return false;
         View current = content.getChildAt(content.getChildCount() - 1);
         if (current == null || !(current.getTag() instanceof String)) return false;
+        boolean defaultHomeReturn = isDefaultHomePage(settingsPageId(current))
+                && (intent.getAction() == null || Intent.ACTION_MAIN.equals(intent.getAction()));
+        if (!defaultHomeReturn
+                && (!Intent.ACTION_MAIN.equals(intent.getAction())
+                || !intent.hasCategory(Intent.CATEGORY_LAUNCHER))) return false;
         while (content.getChildCount() > 1) {
             View stale = content.getChildAt(0);
             stale.animate().cancel();
@@ -1598,6 +1617,8 @@ public final class MaintainedLauncherSettingsHost {
 
     public static void applyLauncherNavigationBarSetting(Activity activity) {
         if (activity == null || activity.getWindow() == null) return;
+        // Existing resume/focus entry shared by Launcher-owned settings and search windows.
+        LauncherSettingBridge.applyLauncherWindowRefresh(activity.getWindow());
         if ("com.smartisanos.launcher.Launcher".equals(activity.getClass().getName())) {
             applyNavigationBarIfChanged(activity);
             return;
@@ -1627,61 +1648,202 @@ public final class MaintainedLauncherSettingsHost {
         }
     }
 
-    private static String sDefaultAeroWallpaperAttempt;
+    private static final Object SYSTEM_WALLPAPER_WRITE_LOCK = new Object();
+    private static final Object WALLPAPER_SELECTION_LOCK = new Object();
+    private static final java.util.concurrent.atomic.AtomicInteger WALLPAPER_PICK_GENERATION =
+            new java.util.concurrent.atomic.AtomicInteger();
+    private static String sThemeWallpaperRequestKey;
+    private static final String PREF_SYSTEM_WALLPAPER_SOURCE = "launcher_system_theme_wallpaper_source_v1";
+    private static final String PREF_SYSTEM_WALLPAPER_ID = "launcher_system_theme_wallpaper_id_v1";
 
-    public static void ensureDefaultAeroWallpaper(final Context context) {
+    /** Reuses the active theme's original background; never runs image work on HOME resume. */
+    public static void ensureThemeSystemWallpaper(final Context context) {
         if (context == null) return;
+        Activity starting = sDeferredLauncherActivity == null ? null : sDeferredLauncherActivity.get();
+        if (starting != null && !starting.isFinishing() && !starting.isDestroyed()
+                && !sLauncherPageTasksPosted) return;
         final Context app = context.getApplicationContext();
-        if (!"smartisan_theme_aero".equals(currentTheme(context))
-                || isTransparentThemeEnabled(context)
-                || !TextUtils.isEmpty(currentLauncherWallpaperUri(context))) {
-            synchronized (MaintainedLauncherSettingsHost.class) { sDefaultAeroWallpaperAttempt = null; }
+        final ThemeWallpaperSource source;
+        try {
+            source = themeWallpaperSource(app);
+        } catch (ReflectiveOperationException error) {
+            Log.w(LOG_TAG, "THEME_WALLPAPER_SOURCE_UNAVAILABLE", error);
             return;
         }
-        try {
-            Object theme = Class.forName("com.smartisanos.launcher.theme.X").getMethod("eg").invoke(null);
-            final Resources resources = (Resources) theme.getClass().getField("mResources").get(theme);
-            String path = (String) theme.getClass().getField("mPath").get(theme);
-            String texture = (String) Class.forName("com.smartisanos.launcher.pb")
-                    .getMethod("path", String.class).invoke(null, "background.png");
-            final String asset = path + texture;
-            final String key = "default-aero:v2:" + theme.getClass().getField("mPackage").get(theme) + ":" + asset;
-            final WallpaperManager manager = WallpaperManager.getInstance(context);
-            final SharedPreferences prefs = context.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE);
-            if (key.equals(prefs.getString("launcher_default_aero_wallpaper_source", ""))
-                    && (Build.VERSION.SDK_INT < 24 || manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM)
-                    == prefs.getInt("launcher_default_aero_wallpaper_id", -1))) return;
-            synchronized (MaintainedLauncherSettingsHost.class) {
-                if (key.equals(sDefaultAeroWallpaperAttempt)) return;
-                sDefaultAeroWallpaperAttempt = key;
-            }
-            THEME_PREVIEW_FETCH_EXECUTOR.execute(new Runnable() {
-                public void run() {
-                    if (!"smartisan_theme_aero".equals(currentTheme(app))
-                            || isTransparentThemeEnabled(app)
-                            || !TextUtils.isEmpty(currentLauncherWallpaperUri(app))) return;
+        if (source == null) return;
+        synchronized (MaintainedLauncherSettingsHost.class) {
+            if (source.requestKey.equals(sThemeWallpaperRequestKey)) return;
+            sThemeWallpaperRequestKey = source.requestKey;
+        }
+        THEME_PREVIEW_FETCH_EXECUTOR.execute(new Runnable() {
+            @Override public void run() {
+                synchronized (SYSTEM_WALLPAPER_WRITE_LOCK) {
+                    Bitmap bitmap = null;
+                    Bitmap prepared = null;
                     try {
-                        InputStream input = resources.getAssets().open(asset);
-                        try {
-                            if (Build.VERSION.SDK_INT >= 24) {
-                                int writtenId = manager.setStream(input, null, true, WallpaperManager.FLAG_SYSTEM);
-                                if (writtenId <= 0 || manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM) != writtenId) {
-                                    Log.w(LOG_TAG, "DEFAULT_AERO_WALLPAPER_NOT_APPLIED permissionOrDeferred=true");
-                                    return;
-                                }
-                            } else manager.setStream(input);
-                        } finally { input.close(); }
-                        prefs.edit().putString("launcher_default_aero_wallpaper_source", key)
-                                .putInt("launcher_default_aero_wallpaper_id", Build.VERSION.SDK_INT >= 24
-                                ? manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM) : 0).apply();
-                        Log.i(LOG_TAG, "DEFAULT_AERO_WALLPAPER_APPLIED source=" + key);
+                        if (!isCurrentWallpaperSource(app, source)) return;
+                        String fingerprint = source.contentIdentityPrefix + wallpaperSourceDigest(app, source);
+                        WallpaperManager manager = WallpaperManager.getInstance(app);
+                        SharedPreferences prefs = app.getSharedPreferences(WALLPAPER_PREFS, Context.MODE_PRIVATE);
+                        int existingId = Build.VERSION.SDK_INT >= 24
+                                ? manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM) : 0;
+                        boolean wallpaperCurrent = fingerprint.equals(prefs.getString(PREF_SYSTEM_WALLPAPER_SOURCE, ""))
+                                && (Build.VERSION.SDK_INT < 24 || existingId == prefs.getInt(PREF_SYSTEM_WALLPAPER_ID, -1));
+                        boolean defaultSourceCurrent = !source.defaultRender
+                                || (source.defaultKey.equals(prefs.getString("launcher_theme_default_source", ""))
+                                && prefs.getString("launcher_theme_default_uri", "").length() > 0);
+                        if (wallpaperCurrent && defaultSourceCurrent) {
+                            Log.i(LOG_TAG, "THEME_WALLPAPER_SYNC_ALREADY_CURRENT theme=" + source.themeId);
+                            return;
+                        }
+                        if (source.uri.length() > 0) {
+                            bitmap = decodeLauncherWallpaperBitmap(app, source.uri);
+                        } else {
+                            InputStream input = source.resources.getAssets().open(source.asset);
+                            try { bitmap = BitmapFactory.decodeStream(input); }
+                            finally { input.close(); }
+                        }
+                        if (bitmap == null) throw new java.io.IOException("Theme background decode failed");
+                        // The original ordinary-theme quad spans the entire window.
+                        // User wallpapers retain the existing center-crop policy.
+                        prepared = source.uri.length() > 0 ? centerCropToScreen(app, bitmap)
+                                : Bitmap.createScaledBitmap(bitmap, source.width, source.height, true);
+                        if (prepared == null || !isCurrentWallpaperSource(app, source)) return;
+                        if (source.defaultRender && !defaultSourceCurrent) publishDefaultWallpaperSource(app, source, prepared);
+                        if (wallpaperCurrent) return;
+                        int writtenId = writeSystemWallpaperBitmap(manager, prepared);
+                        prefs.edit().putString(PREF_SYSTEM_WALLPAPER_SOURCE, fingerprint)
+                                .putInt(PREF_SYSTEM_WALLPAPER_ID, writtenId).commit();
+                        Log.i(LOG_TAG, "THEME_WALLPAPER_SYNC_APPLIED theme=" + source.themeId
+                                + " source=" + (source.uri.length() > 0 ? "selected" : "theme_asset")
+                                + " wallpaperId=" + writtenId + " width=" + prepared.getWidth()
+                                + " height=" + prepared.getHeight());
                     } catch (Exception error) {
-                        Log.w(LOG_TAG, "DEFAULT_AERO_WALLPAPER_FAILED", error);
+                        Log.w(LOG_TAG, "THEME_WALLPAPER_SYNC_FAILED theme=" + source.themeId, error);
+                        if (isCurrentWallpaperRequest(source)) {
+                            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                @Override public void run() {
+                                    if (isCurrentWallpaperRequest(source)) Toast.makeText(app,
+                                            "系统壁纸同步失败，桌面主题已保留", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+                    } finally {
+                        if (prepared != null && prepared != bitmap) prepared.recycle();
+                        if (bitmap != null) bitmap.recycle();
                     }
                 }
-            });
-        } catch (Exception error) {
-            Log.w(LOG_TAG, "DEFAULT_AERO_WALLPAPER_SOURCE_FAILED", error);
+            }
+        });
+    }
+
+    private static boolean isCurrentWallpaperRequest(ThemeWallpaperSource source) {
+        synchronized (MaintainedLauncherSettingsHost.class) {
+            return source.requestKey.equals(sThemeWallpaperRequestKey);
+        }
+    }
+
+    private static boolean isCurrentWallpaperSource(Context app, ThemeWallpaperSource source)
+            throws ReflectiveOperationException {
+        ThemeWallpaperSource current = themeWallpaperSource(app);
+        return isCurrentWallpaperRequest(source) && current != null
+                && source.requestKey.equals(current.requestKey);
+    }
+
+    private static ThemeWallpaperSource themeWallpaperSource(Context context)
+            throws ReflectiveOperationException {
+        Class<?> constants = Class.forName("com.smartisanos.launcher.data.Constants");
+        if (constants.getField("ENABLE_LARGE_SCREEN_MODE").getBoolean(null)) return null;
+        Class<?> themeManager = Class.forName("com.smartisanos.launcher.theme.X");
+        Object theme = themeManager.getMethod("eg").invoke(null);
+        if (theme == null) return null;
+        boolean transparent = isTransparentThemeEnabled(context);
+        // The transparent package's background is an alpha-only overlay, not a wallpaper.
+        // Its default image comes from the original saved underlying theme.
+        if (transparent && selectedWallpaperUri(context).length() == 0
+                && "smartisan_theme_trans".equals(theme.getClass().getField("mId").get(theme))) {
+            theme = themeManager.getMethod("fa", String.class).invoke(null, readTransparentPreviousTheme(context));
+            if (theme == null) return null;
+        }
+        Resources resources = (Resources) theme.getClass().getField("mResources").get(theme);
+        if (resources == null) return null;
+        String id = (String) theme.getClass().getField("mId").get(theme);
+        String pkg = (String) theme.getClass().getField("mPackage").get(theme);
+        String path = (String) theme.getClass().getField("mPath").get(theme);
+        String texture = (String) Class.forName("com.smartisanos.launcher.pb")
+                .getMethod("path", String.class).invoke(null, "background.png");
+        boolean usesSelected = transparent || "smartisan_theme_aero".equals(id);
+        String uri = usesSelected ? selectedWallpaperUri(context) : "";
+        if (uri == null) uri = "";
+        int width = constants.getField("window_width").getInt(null);
+        int height = constants.getField("window_height").getInt(null);
+        if (width <= 0 || height <= 0) {
+            width = context.getResources().getDisplayMetrics().widthPixels;
+            height = context.getResources().getDisplayMetrics().heightPixels;
+        }
+        if (width <= 0 || height <= 0) return null;
+        return new ThemeWallpaperSource(resources, id, String.valueOf(pkg),
+                (path == null ? "" : path) + texture, uri, width, height, transparent);
+    }
+
+    private static String wallpaperSourceDigest(Context context, ThemeWallpaperSource source)
+            throws java.io.IOException, java.security.NoSuchAlgorithmException {
+        InputStream input = source.uri.length() > 0
+                ? context.getContentResolver().openInputStream(Uri.parse(source.uri))
+                : source.resources.getAssets().open(source.asset);
+        if (input == null) throw new java.io.IOException("Background source unavailable");
+        java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+        try {
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = input.read(buffer)) != -1) digest.update(buffer, 0, count);
+        } finally { input.close(); }
+        StringBuilder result = new StringBuilder(64);
+        for (byte value : digest.digest()) result.append(String.format(java.util.Locale.ROOT, "%02x", value & 255));
+        return result.toString();
+    }
+
+    private static int writeSystemWallpaperBitmap(WallpaperManager manager, Bitmap bitmap)
+            throws java.io.IOException {
+        if ((Build.VERSION.SDK_INT >= 23 && !manager.isWallpaperSupported())
+                || (Build.VERSION.SDK_INT >= 24 && !manager.isSetWallpaperAllowed())) {
+            throw new java.io.IOException("System wallpaper changes are not allowed");
+        }
+        manager.suggestDesiredDimensions(bitmap.getWidth(), bitmap.getHeight());
+        if (Build.VERSION.SDK_INT >= 24) {
+            int id = manager.setBitmap(bitmap, new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight()),
+                    true, WallpaperManager.FLAG_SYSTEM);
+            if (id <= 0 || manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM) != id) {
+                throw new java.io.IOException("System wallpaper was not applied");
+            }
+            return id;
+        }
+        manager.setBitmap(bitmap);
+        return 0;
+    }
+
+    private static void invalidateThemeWallpaperSync() {
+        synchronized (MaintainedLauncherSettingsHost.class) { sThemeWallpaperRequestKey = null; }
+    }
+
+    private static final class ThemeWallpaperSource {
+        final Resources resources;
+        final String themeId, asset, uri, requestKey, contentIdentityPrefix;
+        final int width, height;
+        final boolean defaultRender;
+        final String defaultKey;
+        ThemeWallpaperSource(Resources resources, String id, String pkg, String asset, String uri,
+                int width, int height, boolean transparent) {
+            this.resources = resources; this.themeId = id; this.asset = asset; this.uri = uri;
+            this.width = width; this.height = height;
+            defaultRender = uri.length() == 0 && (transparent || "smartisan_theme_aero".equals(id));
+            defaultKey = id + ":" + pkg + ":" + asset + ":" + width + "x" + height
+                    + ":" + System.identityHashCode(resources);
+            String requestIdentity = "v1:" + id + ":" + pkg + ":" + asset + ":" + uri
+                    + ":" + width + "x" + height + ":" + transparent + ":";
+            requestKey = requestIdentity + System.identityHashCode(resources);
+            contentIdentityPrefix = (uri.length() > 0 ? "crop-v1:" : "stretch-v1:")
+                    + width + "x" + height + ":";
         }
     }
 
@@ -2977,45 +3139,63 @@ public final class MaintainedLauncherSettingsHost {
             if (context == null || !shouldShowIconEntry(info)) {
                 return null;
             }
-            Resources resources = sSettingsResources;
-            if (resources == null) {
-                scheduleSettingsResourcesWarm(context);
-                resources = context.getResources();
-            }
-            CharSequence label = null;
-            try {
-                label = info == null ? null : info.loadLabel(pm);
-            } catch (Throwable ignored) {
-            }
-            return selectedIconDrawable(context, info, label, resources);
+            // Bundled choices are defined in the settings resource table.
+            // A cold warm-up cache must not resolve them against the launcher APK.
+            Resources resources = settingsResources(context);
+            return selectedIconDrawable(context, info, null, resources);
         } catch (Throwable ignored) {
             return null;
         }
     }
 
     public static Drawable loadIcon(ResolveInfo info, PackageManager pm) {
+        return loadIconSource(info, pm, null).drawable;
+    }
+
+    private static ManagedIconSource loadIconSource(ResolveInfo info, PackageManager pm,
+                                                   Context keyContext) {
         if (info == null || pm == null) {
-            return null;
+            return new ManagedIconSource(null, "DEFAULT");
         }
-        if (isOriginalIconForced(info)) {
+        if (!isOriginalIconForced(info)) {
             try {
-                return normalizeLauncherIcon(info.loadIcon(pm));
+                Drawable override = iconOverrideDrawable(info, pm);
+                if (override != null) {
+                    return new ManagedIconSource(normalizeLauncherIcon(override), "DEFAULT");
+                }
             } catch (Throwable ignored) {
-                return null;
             }
         }
+        if (keyContext != null && info.activityInfo != null) {
+            String hash = defaultDesktopSourceFingerprint(keyContext, info);
+            if (hash != null) return new ManagedIconSource(null, "DEFAULT", null, null, hash);
+        }
         try {
-            Drawable override = iconOverrideDrawable(info, pm);
-            if (override != null) {
-                return normalizeLauncherIcon(override);
+            return new ManagedIconSource(normalizeLauncherIcon(loadApkIcon(info, pm)), "DEFAULT");
+        } catch (Throwable ignored) {
+            return new ManagedIconSource(null, "DEFAULT");
+        }
+    }
+
+    private static Drawable loadApkIcon(ResolveInfo info, PackageManager pm) {
+        // Load the component's APK resource before OEM PackageManager icon decoration.
+        // A fixed source density also keeps bitmap artwork selection consistent across devices.
+        if (info != null && info.activityInfo != null
+                && info.activityInfo.applicationInfo != null) {
+            int icon = info.getIconResource();
+            if (icon != 0) {
+                try {
+                    Resources apk = TextUtils.isEmpty(info.resolvePackageName)
+                            ? pm.getResourcesForApplication(info.activityInfo.applicationInfo)
+                            : pm.getResourcesForApplication(info.resolvePackageName);
+                    return apk.getDrawableForDensity(icon, android.util.DisplayMetrics.DENSITY_XXXHIGH);
+                } catch (PackageManager.NameNotFoundException | Resources.NotFoundException
+                        | SecurityException unavailable) {
+                    // Retain component-specific fallback if the raw resource is unavailable.
+                }
             }
-        } catch (Throwable ignored) {
         }
-        try {
-            return normalizeLauncherIcon(info.loadIcon(pm));
-        } catch (Throwable ignored) {
-            return null;
-        }
+        return info.loadIcon(pm);
     }
 
     static List<WeatherBridge.CityResult> searchBundledCities(Context context, String query,
@@ -3092,18 +3272,28 @@ public final class MaintainedLauncherSettingsHost {
 
     /** Load first-frame icons through the same component-aware path as refreshes. */
     public static Drawable loadIconForComponent(Context context, String packageName, String className) {
+        return loadIconForComponentSource(context, packageName, className, false, null).drawable;
+    }
+
+    private static ManagedIconSource loadIconForComponentSource(Context context, String packageName,
+                                                               String className, boolean keyOnly,
+                                                               ResolveInfo prepared) {
         if (context == null || TextUtils.isEmpty(packageName)) {
-            return null;
+            return new ManagedIconSource(null, "DEFAULT");
         }
         try {
             PackageManager pm = context.getPackageManager();
-            ResolveInfo info = resolveLauncherActivity(pm, packageName, className);
+            ResolveInfo info = prepared == null
+                    ? resolveLauncherActivity(pm, packageName, className) : prepared;
             if (info != null) {
-                return loadIcon(info, pm);
+                boolean exact = info.activityInfo != null
+                        && packageName.equals(info.activityInfo.packageName)
+                        && className != null && className.equals(info.activityInfo.name);
+                return loadIconSource(info, pm, keyOnly && exact ? context : null);
             }
-            return normalizeLauncherIcon(pm.getApplicationIcon(packageName));
+            return new ManagedIconSource(normalizeLauncherIcon(pm.getApplicationIcon(packageName)), "DEFAULT");
         } catch (Throwable ignored) {
-            return null;
+            return new ManagedIconSource(null, "DEFAULT");
         }
     }
 
@@ -3172,7 +3362,7 @@ public final class MaintainedLauncherSettingsHost {
             }
             ResolveInfo info = resolveLauncherActivity(
                     context.getPackageManager(), packageName, className);
-            if (info != null) return info.loadIcon(context.getPackageManager());
+            if (info != null) return loadApkIcon(info, context.getPackageManager());
             return context.getPackageManager().getApplicationIcon(packageName);
         } catch (Throwable ignored) {
             return null;
@@ -3279,12 +3469,23 @@ public final class MaintainedLauncherSettingsHost {
     /** Shared hot-update path for a pack's preload completion and package install/remove/replace. */
     public static void onIconPackOverridesChanged(final Context context, final String packPackage) {
         if (context == null || TextUtils.isEmpty(packPackage)) return;
-        final Context app = context.getApplicationContext();
+        final Context app = context.getApplicationContext() == null
+                ? context : context.getApplicationContext();
+        // Read the persisted selection before uninstall fallback or a later source switch.
+        final boolean selectedPackChanged = packPackage.equals(
+                IconPackManager.getSelectedIconPackPackage(app));
         final IconPreviewRepository previews = IconPreviewRepository.get(app);
         previews.invalidateCandidates();
         previews.schedule(IconPreviewRepository.Priority.P1_ADJACENT, new Runnable() {
             public void run() {
                 final java.util.HashSet<String> affected = new java.util.HashSet<String>();
+                if (selectedPackChanged) {
+                    // AUTO rows may have no redirect record, and removed appfilter
+                    // mappings are absent from getLoadedIconPackages() after preload.
+                    for (String pkg : allLauncherPackages(app).split(",")) {
+                        if (!TextUtils.isEmpty(pkg)) affected.add(pkg);
+                    }
+                }
                 for (RedirectIconInfo entry : RedirectIconDB.listAllInfo(app)) {
                     if (RedirectIconDB.MODE_PACK.equals(RedirectIconDB.modeOf(entry))
                             && packPackage.equals(RedirectIconDB.packNameOf(entry))) affected.add(entry.packageName);
@@ -3601,6 +3802,12 @@ public final class MaintainedLauncherSettingsHost {
     }
 
     public static boolean onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
+        // Some role controllers reject immediately without a pause/resume pair.
+        // Both return routes consume the same pending flag; neither trusts resultCode.
+        if (requestCode == REQUEST_DEFAULT_HOME) {
+            checkDefaultHomeReturn(activity);
+            return true;
+        }
         if (requestCode == REQUEST_BACKUP_TREE || requestCode == REQUEST_RESTORE_DOCUMENT) {
             return onBackupActivityResult(activity, requestCode, resultCode, data);
         }
@@ -3657,51 +3864,77 @@ public final class MaintainedLauncherSettingsHost {
             activity.getContentResolver().takePersistableUriPermission(uri, flags);
         } catch (Throwable ignored) {
         }
-        new Thread(new Runnable() {
+        final int generation = WALLPAPER_PICK_GENERATION.incrementAndGet();
+        final long selectedAt = android.os.SystemClock.uptimeMillis();
+        THEME_PREVIEW_FETCH_EXECUTOR.execute(new Runnable() {
             @Override
             public void run() {
-                persistPickedWallpaper(activity, uri);
+                synchronized (WALLPAPER_SELECTION_LOCK) {
+                    if (generation == WALLPAPER_PICK_GENERATION.get()) {
+                        persistPickedWallpaper(activity, uri, generation, selectedAt);
+                    }
+                }
             }
-        }, "LauncherWallpaperSave").start();
+        });
         return true;
     }
 
-    private static void persistPickedWallpaper(final Activity activity, Uri uri) {
+    private static void persistPickedWallpaper(final Activity activity, Uri uri, int generation, final long selectedAt) {
         try {
             String launcherUri = saveLauncherWallpaperCopy(activity, uri);
             if (launcherUri == null || launcherUri.length() == 0) {
                 launcherUri = uri.toString();
             }
-            boolean systemWallpaperApplied = setWallpaperFromUri(activity, Uri.parse(launcherUri));
-            if (!systemWallpaperApplied && !launcherUri.equals(uri.toString())) {
-                systemWallpaperApplied = setWallpaperFromUri(activity, uri);
-            }
-            saveGaussianWallpaperCopy(activity, Uri.parse(launcherUri));
-            String thumbPath = saveWallpaperThumbnail(activity, Uri.parse(launcherUri));
+            if (generation != WALLPAPER_PICK_GENERATION.get()) return;
             syncLauncherWallpaperUri(activity, launcherUri);
             setLauncherWallpaperConstant(launcherUri);
             try {
                 activity.getSharedPreferences(WALLPAPER_PREFS, Context.MODE_PRIVATE)
                         .edit()
                         .putString(PREF_WALLPAPER_URI, launcherUri)
-                        .putString(PREF_WALLPAPER_THUMB, thumbPath == null ? "" : thumbPath)
+                        .putString(PREF_WALLPAPER_THUMB, "")
                         .putBoolean(PREF_WALLPAPER_READY, true)
                         .commit();
             } catch (Throwable ignored) {
             }
-            logOperation(activity, "WALLPAPER", "picked uri=" + launcherUri
-                    + ", thumb=" + thumbPath
-                    + ", setSystemWallpaper=" + systemWallpaperApplied);
-            Log.d(LOG_TAG, "Wallpaper picked, set system wallpaper=" + systemWallpaperApplied
-                    + ", uri=" + launcherUri);
+            if ("file".equals(Uri.parse(launcherUri).getScheme())) {
+                cleanupOldWallpaperCopies(activity, new File(Uri.parse(launcherUri).getPath()));
+            }
+            invalidateThemeWallpaperSync();
+            Log.i(LOG_TAG, "WALLPAPER_PICK_SOURCE_READY elapsedMs="
+                    + (android.os.SystemClock.uptimeMillis() - selectedAt));
             new Handler(Looper.getMainLooper()).post(new Runnable() {
                 @Override
                 public void run() {
-                    boolean refreshed = refreshLauncherWallpaperNow(activity);
-                    markWallpaperRefreshPending(activity, !refreshed);
+                    if (generation != WALLPAPER_PICK_GENERATION.get()) return;
+                    Context app = activity.getApplicationContext();
+                    boolean refreshed = refreshLauncherWallpaperNow(app);
+                    markWallpaperRefreshPending(app, !refreshed);
+                    Log.i(LOG_TAG, "WALLPAPER_PICK_REFRESH_REQUESTED elapsedMs="
+                            + (android.os.SystemClock.uptimeMillis() - selectedAt) + " refreshed=" + refreshed);
+                    if (activity.isFinishing()
+                            || (Build.VERSION.SDK_INT >= 17 && activity.isDestroyed())) return;
                     Toast.makeText(activity, "桌面壁纸已应用", Toast.LENGTH_SHORT).show();
                     bindWallpaperSettingIcon(activity, activity.getResources(),
                             activity.getWindow().getDecorView());
+                }
+            });
+            // Publish the selected original before optional compatibility copies.
+            // These operations remain on the existing worker, never blocking selection UI.
+            if (generation != WALLPAPER_PICK_GENERATION.get()) return;
+            ensureThemeSystemWallpaper(activity);
+            saveGaussianWallpaperCopy(activity, Uri.parse(launcherUri));
+            if (generation != WALLPAPER_PICK_GENERATION.get()) return;
+            String thumbPath = saveWallpaperThumbnail(activity, Uri.parse(launcherUri));
+            if (generation != WALLPAPER_PICK_GENERATION.get()) return;
+            activity.getSharedPreferences(WALLPAPER_PREFS, Context.MODE_PRIVATE).edit()
+                    .putString(PREF_WALLPAPER_THUMB, thumbPath == null ? "" : thumbPath).commit();
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override public void run() {
+                    if (generation == WALLPAPER_PICK_GENERATION.get() && !activity.isFinishing()
+                            && (Build.VERSION.SDK_INT < 17 || !activity.isDestroyed())) {
+                        bindWallpaperSettingIcon(activity, activity.getResources(), activity.getWindow().getDecorView());
+                    }
                 }
             });
         } catch (Throwable t) {
@@ -3711,48 +3944,6 @@ public final class MaintainedLauncherSettingsHost {
                     Toast.makeText(activity, "壁纸设置失败", Toast.LENGTH_SHORT).show();
                 }
             });
-        }
-    }
-
-    private static boolean setWallpaperFromUri(Context context, Uri uri) {
-        InputStream in = null;
-        try {
-            in = context.getContentResolver().openInputStream(uri);
-            if (in == null) {
-                return false;
-            }
-            WallpaperManager wallpaperManager = WallpaperManager.getInstance(context);
-            if (Build.VERSION.SDK_INT >= 24) {
-                try {
-                    wallpaperManager.setStream(in, null, true, WallpaperManager.FLAG_SYSTEM);
-                    Log.d(LOG_TAG, "set system wallpaper with FLAG_SYSTEM ok: " + uri);
-                    return true;
-                } catch (Throwable t) {
-                    Log.w(LOG_TAG, "set system wallpaper with FLAG_SYSTEM failed, retry legacy: "
-                            + shortError(t));
-                    try {
-                        in.close();
-                    } catch (Throwable ignoredAgain) {
-                    }
-                    in = context.getContentResolver().openInputStream(uri);
-                }
-            }
-            if (in == null) {
-                return false;
-            }
-            wallpaperManager.setStream(in);
-            Log.d(LOG_TAG, "set system wallpaper legacy ok: " + uri);
-            return true;
-        } catch (Throwable t) {
-            Log.w(LOG_TAG, "set system wallpaper failed: " + shortError(t));
-            return false;
-        } finally {
-            if (in != null) {
-                try {
-                    in.close();
-                } catch (Throwable ignored) {
-                }
-            }
         }
     }
 
@@ -3799,7 +3990,6 @@ public final class MaintainedLauncherSettingsHost {
                 out.write(buffer, 0, read);
             }
             out.flush();
-            cleanupOldWallpaperCopies(context, file);
             return Uri.fromFile(file).toString();
         } catch (Throwable ignored) {
             return null;
@@ -3856,7 +4046,7 @@ public final class MaintainedLauncherSettingsHost {
             if (context == null || ai == null) {
                 return false;
             }
-            RedirectIconInfo redirect = RedirectIconDB.getRedirectIconInfo(context, ai.packageName, ai.name);
+            RedirectIconInfo redirect = RedirectIconDB.getRedirectIconMetadata(context, ai.packageName, ai.name);
             return redirect != null && RedirectIconDB.MODE_ORIGINAL.equals(RedirectIconDB.modeOf(redirect));
         } catch (Throwable ignored) {
             return false;
@@ -4000,8 +4190,125 @@ public final class MaintainedLauncherSettingsHost {
         return result;
     }
 
+    public static java.util.Set<String> desktopBackupImprovedSourceIds(Context context,
+            String packageName, String componentName) {
+        java.util.HashSet<String> sources = new java.util.HashSet<String>();
+        IconPreviewRepository.ImprovedCandidate candidate = IconPreviewRepository.get(context)
+                .resolveImprovedCandidate(packageName, componentName);
+        if (candidate.exists && !TextUtils.isEmpty(candidate.sourceId)) sources.add(candidate.sourceId);
+        ResolveInfo resolved = resolveLauncherActivity(context.getPackageManager(), packageName, componentName);
+        String alias = smartisanSystemIconAlias(context, resolved);
+        if (!TextUtils.isEmpty(alias)) sources.add(alias);
+        return sources;
+    }
+
+    public static String wallpaperBackupPreviousTheme(Context context) {
+        return readTransparentPreviousTheme(context);
+    }
+
+    /** Backup only the user's original, never derived wallpaper files or a foreign URI. */
+    public static boolean exportWallpaperSourceForBackup(Context context, File output,
+            com.smartisanos.launcher.backup.DesktopBackupController.CancellationToken cancellation)
+            throws Exception {
+        synchronized (WALLPAPER_SELECTION_LOCK) {
+            String uri = selectedWallpaperUri(context);
+            if (uri.length() == 0) return false;
+            File parent = output.getParentFile();
+            if (!parent.isDirectory() && !parent.mkdirs()) throw new java.io.IOException("Wallpaper backup directory failed");
+            InputStream input = context.getContentResolver().openInputStream(Uri.parse(uri));
+            if (input == null) throw new java.io.IOException("Selected wallpaper is unavailable");
+            try {
+                FileOutputStream stream = new FileOutputStream(output);
+                try {
+                    byte[] buffer = new byte[16384];
+                    long total = 0;
+                    int read;
+                    while ((read = input.read(buffer)) != -1) {
+                        if (cancellation != null) cancellation.throwIfCancelled();
+                        total += read;
+                        if (total > 20L * 1024L * 1024L) throw new java.io.IOException("Wallpaper exceeds backup entry limit (20 MiB)");
+                        stream.write(buffer, 0, read);
+                    }
+                    if (total == 0) throw new java.io.IOException("Selected wallpaper is empty");
+                } finally { stream.close(); }
+            } finally { input.close(); }
+            return true;
+        }
+    }
+
+    /** Restore through the same URI owner; the restore coordinator reloads the scene. */
+    public static void restoreWallpaperSourceFromBackup(Context context, File source, String previousTheme)
+            throws Exception {
+        WALLPAPER_PICK_GENERATION.incrementAndGet();
+        synchronized (WALLPAPER_SELECTION_LOCK) {
+            if (previousTheme.length() > 0 && !saveTransparentPreviousTheme(context, previousTheme)) {
+                throw new java.io.IOException("Underlying wallpaper theme restore failed");
+            }
+            if (source == null) {
+                clearStoredLauncherWallpaper(context);
+            } else {
+                String uri = saveLauncherWallpaperCopy(context, Uri.fromFile(source));
+                if (uri == null || uri.length() == 0) throw new java.io.IOException("Wallpaper restore copy failed");
+                syncLauncherWallpaperUri(context, uri);
+                if (!context.getSharedPreferences(WALLPAPER_PREFS, Context.MODE_PRIVATE).edit()
+                        .putString(PREF_WALLPAPER_URI, uri).putString(PREF_WALLPAPER_THUMB, "")
+                        .putBoolean(PREF_WALLPAPER_READY, true)
+                        .putBoolean(PREF_WALLPAPER_REFRESH_PENDING, true).commit()) {
+                    throw new java.io.IOException("Wallpaper restore preference commit failed");
+                }
+                setLauncherWallpaperConstant(uri);
+                cleanupOldWallpaperCopies(context, new File(Uri.parse(uri).getPath()));
+            }
+            // Never write the old active theme while restore is still applying preferences.
+            // The existing cold reload initializes the target theme and performs synchronization.
+            invalidateThemeWallpaperSync();
+            context.getSharedPreferences(WALLPAPER_PREFS, Context.MODE_PRIVATE).edit()
+                    .remove("launcher_theme_default_source").remove("launcher_theme_default_uri").commit();
+        }
+    }
+
     public static String currentLauncherWallpaperUri(Context context) {
-        return selectedWallpaperUri(context);
+        String selected = selectedWallpaperUri(context);
+        if (selected.length() > 0 || context == null) return selected;
+        try {
+            ThemeWallpaperSource source = themeWallpaperSource(context);
+            if (source == null || !source.defaultRender) return "";
+            SharedPreferences prefs = context.getSharedPreferences(WALLPAPER_PREFS, Context.MODE_PRIVATE);
+            if (source.defaultKey.equals(prefs.getString("launcher_theme_default_source", ""))) {
+                return prefs.getString("launcher_theme_default_uri", "");
+            }
+        } catch (ReflectiveOperationException error) {
+            Log.w(LOG_TAG, "DEFAULT_WALLPAPER_SOURCE_UNAVAILABLE", error);
+        }
+        return "";
+    }
+
+    private static void publishDefaultWallpaperSource(final Context app, final ThemeWallpaperSource source,
+            Bitmap prepared) throws java.io.IOException {
+        // Android 14+ cannot reliably read the applied wallpaper. Keep the same
+        // prepared source for the original renderer, separately from the user's photo.
+        File file = new File(app.getFilesDir(), "launcher_theme_default.png");
+        File temporary = new File(app.getFilesDir(), "launcher_theme_default.pending");
+        try {
+            FileOutputStream output = new FileOutputStream(temporary);
+            try {
+                if (!prepared.compress(Bitmap.CompressFormat.PNG, 100, output)) {
+                    throw new java.io.IOException("Default background encode failed");
+                }
+            } finally { output.close(); }
+            if (!isCurrentWallpaperSource(app, source)) return;
+            if (!temporary.renameTo(file)) throw new java.io.IOException("Default background publish failed");
+            app.getSharedPreferences(WALLPAPER_PREFS, Context.MODE_PRIVATE).edit()
+                    .putString("launcher_theme_default_source", source.defaultKey)
+                    .putString("launcher_theme_default_uri", Uri.fromFile(file).toString()).commit();
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override public void run() {
+                    if (isCurrentWallpaperRequest(source)) refreshLauncherWallpaperSurface();
+                }
+            });
+        } catch (ReflectiveOperationException error) {
+            throw new java.io.IOException("Default background selection unavailable", error);
+        } finally { temporary.delete(); }
     }
 
     public static boolean isLauncherWallpaperTheme(Context context) {
@@ -4061,11 +4368,19 @@ public final class MaintainedLauncherSettingsHost {
         }
     }
 
+    // A successful Application belongs to this process; failures and other Contexts stay retryable.
+    private static volatile android.app.Application sCurrentApplication;
+
     public static Context currentApplicationContext() {
+        android.app.Application cached = sCurrentApplication;
+        if (cached != null) return cached;
         try {
             Class<?> thread = Class.forName("android.app.ActivityThread");
             Object app = thread.getMethod("currentApplication").invoke(null);
             if (app instanceof Context) {
+                if (app instanceof android.app.Application) {
+                    sCurrentApplication = (android.app.Application) app;
+                }
                 return (Context) app;
             }
         } catch (Throwable ignored) {
@@ -4103,14 +4418,36 @@ public final class MaintainedLauncherSettingsHost {
         return "DEFAULT";
     }
 
+    public static boolean desktopDefaultCircleEnabled(Object itemInfo) {
+        return desktopDefaultCircleEnabled(itemInfo, desktopIconSourceType(itemInfo));
+    }
+
+    /** Use the source actually resolved for this render, not the persisted preference. */
+    public static boolean desktopDefaultCircleEnabled(Object itemInfo, String effectiveType) {
+        Context context = currentApplicationContext();
+        if (context == null || itemInfo == null) return false;
+        return DefaultIconCircleRenderer.appliesToSelection(
+                DefaultIconCircleRenderer.isCircleEnabled(context), effectiveType);
+    }
+
     public static String desktopIconSourceIdentity(Object itemInfo) {
+        return desktopIconSourceIdentity(itemInfo, desktopIconSourceType(itemInfo));
+    }
+
+    /** Reuse the effective type resolved immediately before building the same source key. */
+    static String desktopIconSourceIdentity(Object itemInfo, String effectiveType) {
         Context context = currentApplicationContext();
         if (context == null || itemInfo == null) return "default";
-        String effectiveType = desktopIconSourceType(itemInfo);
         if ("DEFAULT".equals(effectiveType)) return "default";
         String pkg = itemFieldValue(itemInfo, "packageName");
         String component = itemFieldValue(itemInfo, "componentName");
         RedirectIconInfo redirect = RedirectIconDB.getRedirectIconInfo(context, pkg, component);
+        return desktopIconSourceIdentity(context, effectiveType, redirect);
+    }
+
+    private static String desktopIconSourceIdentity(Context context, String effectiveType,
+                                                     RedirectIconInfo redirect) {
+        if ("DEFAULT".equals(effectiveType)) return "default";
         String mode = RedirectIconDB.modeOf(redirect);
         if (RedirectIconDB.MODE_CUSTOM.equals(mode)) {
             return "custom:" + (redirect == null || redirect.iconData == null
@@ -4127,6 +4464,102 @@ public final class MaintainedLauncherSettingsHost {
         return global.type == IconSourceManager.Type.PACK
                 ? "pack:" + String.valueOf(global.packageName)
                 : global.type == IconSourceManager.Type.IMPROVED ? "improved" : "default";
+    }
+
+    /** One-call snapshot for texture keys; never retained or recycled by the caller. */
+    static ManagedIconSource desktopSourceForTextureKey(Object itemInfo) {
+        return desktopSourceForItem(itemInfo, true);
+    }
+
+    /** Call-local source/type/identity for drawing; no Bitmap or selection survives this call. */
+    static ManagedIconSource desktopSourceForComposition(Object itemInfo) {
+        return desktopSourceForItem(itemInfo, false);
+    }
+
+    private static ManagedIconSource desktopSourceForItem(Object itemInfo, boolean keyOnly) {
+        Context context = currentApplicationContext();
+        if (context == null || itemInfo == null
+                || !"0".equals(itemFieldValue(itemInfo, "userId"))) return null;
+        String pkg = itemFieldValue(itemInfo, "packageName");
+        String component = itemFieldValue(itemInfo, "componentName");
+        if (TextUtils.isEmpty(pkg) || TextUtils.isEmpty(component)) return null;
+        try {
+            RedirectIconInfo redirect = null;
+            if (!keyOnly) {
+                redirect = RedirectIconDB.getRedirectIconInfo(context, pkg, component);
+                String mode = RedirectIconDB.modeOf(redirect);
+                // The old type query decides explicit DEFAULT without resolving an Activity.
+                if (RedirectIconDB.MODE_ORIGINAL.equals(mode)
+                        || (RedirectIconDB.MODE_AUTO.equals(mode)
+                        && IconSourceManager.get(context).type == IconSourceManager.Type.DEFAULT)) {
+                    return new ManagedIconSource(null, "DEFAULT", "DEFAULT", "default");
+                }
+            }
+            ResolveInfo resolved = resolveLauncherActivity(context.getPackageManager(), pkg, component);
+            // Preserve the existing component/profile fallback rules outside this exact route.
+            if (resolved == null || resolved.activityInfo == null
+                    || !pkg.equals(resolved.activityInfo.packageName)
+                    || !component.equals(resolved.activityInfo.name)) return null;
+            if (keyOnly) redirect = RedirectIconDB.getRedirectIconInfo(context, pkg, component);
+            String mode = RedirectIconDB.modeOf(redirect);
+            if (keyOnly && (RedirectIconDB.MODE_ORIGINAL.equals(mode)
+                    || (RedirectIconDB.MODE_AUTO.equals(mode)
+                    && IconSourceManager.get(context).type == IconSourceManager.Type.DEFAULT))) {
+                String hash = defaultDesktopSourceFingerprint(context, resolved);
+                if (hash != null) {
+                    return new ManagedIconSource(null, "DEFAULT", "DEFAULT",
+                            desktopIconSourceIdentity(context, "DEFAULT", redirect), hash);
+                }
+            }
+            SettingsResourceContext settings = createSettingsContext(context);
+            ManagedIconSource managed = resolveManagedIconSource(context, resolved,
+                    settings.getResources(), null, redirect);
+            String type = "DEFAULT";
+            if (RedirectIconDB.MODE_CUSTOM.equals(mode)) {
+                if (redirect != null && redirect.iconData != null) type = "CUSTOM";
+            } else if (managed.drawable != null) {
+                if (RedirectIconDB.MODE_RESOURCE.equals(mode)) type = "RESOURCE";
+                else if (managed.choiceKey.startsWith("PACK:")) type = "PACK";
+                else if (!RedirectIconDB.MODE_ORIGINAL.equals(mode)) type = "IMPROVED";
+            }
+            if (!keyOnly) {
+                // No exact redirect means the existing desktop loader may use its single-Activity fallback.
+                // Reuse the type check, but let that loader recheck missing/late artwork as before.
+                Drawable drawable = redirect != null && component.equals(redirect.componentName)
+                        ? normalizeLauncherIcon(managed.drawable) : null;
+                return new ManagedIconSource(drawable, managed.choiceKey, type,
+                        desktopIconSourceIdentity(context, type, redirect));
+            }
+            if (managed.drawable == null) {
+                // A nonblocking pack/library miss can become ready during fallback.
+                // Keep that second resolution; only its confirmed APK fallback can use metadata.
+                if (RedirectIconDB.MODE_AUTO.equals(mode)
+                        && IconSourceManager.get(context).type == IconSourceManager.Type.IMPROVED) {
+                    // Reuse only this call's validated component; the override is still rechecked.
+                    return loadIconForComponentSource(context, pkg, component, true, resolved);
+                }
+                return new ManagedIconSource(loadIconForComponent(context, pkg, component), "DEFAULT");
+            }
+            return new ManagedIconSource(normalizeLauncherIcon(managed.drawable), managed.choiceKey, type,
+                    desktopIconSourceIdentity(context, type, redirect));
+        } catch (Throwable ignored) {
+            // The original complete path remains responsible for exceptional resolution.
+            return null;
+        }
+    }
+
+    /** Installed APK/configuration identity; obtaining a texture key must not decode its icon. */
+    private static String defaultDesktopSourceFingerprint(Context context, ResolveInfo resolved) {
+        ActivityInfo activity = resolved.activityInfo;
+        ApplicationInfo application = activity.applicationInfo;
+        long installed = packageVersionStamp(context, activity.packageName);
+        if (installed <= 0L || application == null || TextUtils.isEmpty(application.sourceDir)) {
+            return null;
+        }
+        return "apk-default:v1:" + installed + ':' + application.sourceDir
+                + ':' + application.publicSourceDir + ':' + application.uid
+                + ':' + resolved.icon + ':' + activity.icon + ':' + application.icon
+                + ':' + context.getResources().getConfiguration().toString();
     }
 
     private static boolean hasEffectiveManagedDesktopSource(
@@ -4203,7 +4636,7 @@ public final class MaintainedLauncherSettingsHost {
                                                     String fallback) {
         try {
             Context context = currentApplicationContext();
-            RedirectIconInfo info = RedirectIconDB.getRedirectIconInfo(context, packageName, componentName);
+            RedirectIconInfo info = RedirectIconDB.getRedirectIconMetadata(context, packageName, componentName);
             if (info != null && !TextUtils.isEmpty(info.displayName)) {
                 return info.displayName;
             }
@@ -4216,6 +4649,17 @@ public final class MaintainedLauncherSettingsHost {
         Context context = currentApplicationContext();
         if (context == null) return fallback;
         return getString(context, "launcher_setting_name", fallback);
+    }
+
+    public static String localizedDesktopSettingsItemLabel(String packageName, String componentName,
+                                                            String fallback) {
+        if ("com.smartisanos.launcher".equals(packageName)
+                && "com.smartisanos.launcher.theme.ThemeChooserActivity".equals(componentName)
+                && ("桌面设置".equals(fallback) || "Desktop Settings".equals(fallback)
+                    || "Launcher Settings".equals(fallback))) {
+            return localizedDesktopSettingsLabel("Desktop Settings");
+        }
+        return fallback;
     }
 
     private static void showThemePage(final Activity activity, final int restoreScrollY) {
@@ -5274,11 +5718,11 @@ public final class MaintainedLauncherSettingsHost {
         return getString(resources, resourceName, entry.name);
     }
 
-    private static int drawable(Resources resources, String name) {
+    static int drawable(Resources resources, String name) {
         if (name == null) {
             return 0;
         }
-        return resources.getIdentifier(name, "drawable", SETTINGS_PKG);
+        return IconPreviewRepository.drawableResourceId(resources, name, SETTINGS_PKG);
     }
 
     private static void pickWallpaper(Activity activity) {
@@ -6833,6 +7277,12 @@ public final class MaintainedLauncherSettingsHost {
     public static void onSettingsHostResumed(Activity activity) {
         if (activity == null) {
             return;
+        }
+        checkDefaultHomeReturn(activity);
+        if (isDefaultHomePage(settingsPageId(activity.findViewById(android.R.id.content)))) {
+            showDefaultHomeCheck(activity);
+            activity.getSharedPreferences("launcher_settings", Context.MODE_PRIVATE).edit()
+                    .remove(PREF_DEFAULT_HOME_RETURN_PAGE).apply();
         }
         if (ownsSettingsSession(activity)) {
             SettingsSession session = sSettingsSessions.get(activity);
@@ -8942,34 +9392,52 @@ public final class MaintainedLauncherSettingsHost {
         }
     }
 
-    private static void restoreDefaultWallpaper(Activity activity) {
+    private static void restoreDefaultWallpaper(final Activity activity) {
         logOperation(activity, "ACTION", "restore_default_wallpaper");
-        try {
-            clearLauncherWallpaper(activity);
-            Toast.makeText(activity, "已恢复默认壁纸", Toast.LENGTH_SHORT).show();
-            bindWallpaperSettingIcon(activity, activity.getResources(), activity.getWindow().getDecorView());
-        } catch (Throwable t) {
-            Toast.makeText(activity, "恢复默认壁纸失败", Toast.LENGTH_SHORT).show();
-        }
+        final int generation = WALLPAPER_PICK_GENERATION.incrementAndGet();
+        invalidateThemeWallpaperSync();
+        THEME_PREVIEW_FETCH_EXECUTOR.execute(new Runnable() {
+            @Override public void run() {
+                synchronized (WALLPAPER_SELECTION_LOCK) {
+                    if (generation != WALLPAPER_PICK_GENERATION.get()) return;
+                    clearLauncherWallpaper(activity);
+                }
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override public void run() {
+                        if (generation != WALLPAPER_PICK_GENERATION.get() || activity.isFinishing()
+                                || (Build.VERSION.SDK_INT >= 17 && activity.isDestroyed())) return;
+                        Toast.makeText(activity, "已恢复默认壁纸", Toast.LENGTH_SHORT).show();
+                        bindWallpaperSettingIcon(activity, activity.getResources(), activity.getWindow().getDecorView());
+                    }
+                });
+            }
+        });
     }
 
-    private static void clearLauncherWallpaper(Context context) {
-        if (context == null) {
-            return;
-        }
+    private static void clearStoredLauncherWallpaper(Context context) {
         clearWallpaperPrefs(context, WALLPAPER_PREFS);
         clearWallpaperPrefs(context, "com.smartisanos.launcher_prefs");
         clearWallpaperSettings(context);
         deleteLauncherWallpaperFiles(context);
         setLauncherWallpaperConstant("");
         markWallpaperRefreshPending(context, false);
-        try {
-            notifyOriginalConfigChanged("launcher_wallpaper_uri");
-            notifyOriginalConfigChanged(KEY_LOCKSCREEN_BACKGROUND);
-            notifyOriginalConfigChanged(KEY_DESKTOP_WALLPAPER_URI);
-        } catch (Throwable ignored) {
-        }
-        refreshLauncherWallpaperSurface();
+    }
+
+    private static void clearLauncherWallpaper(Context context) {
+        if (context == null) return;
+        invalidateThemeWallpaperSync();
+        clearStoredLauncherWallpaper(context);
+        final int generation = WALLPAPER_PICK_GENERATION.get();
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override public void run() {
+                if (generation != WALLPAPER_PICK_GENERATION.get()) return;
+                notifyOriginalConfigChanged("launcher_wallpaper_uri");
+                notifyOriginalConfigChanged(KEY_LOCKSCREEN_BACKGROUND);
+                notifyOriginalConfigChanged(KEY_DESKTOP_WALLPAPER_URI);
+                refreshLauncherWallpaperSurface();
+            }
+        });
+        ensureThemeSystemWallpaper(context);
     }
 
     private static void clearWallpaperPrefs(Context context, String prefs) {
@@ -9254,6 +9722,7 @@ public final class MaintainedLauncherSettingsHost {
                 sDeferredLauncherActivity = new WeakReference<Activity>(launcherActivity);
                 sLauncherFirstFrameReady = false;
                 sDeferredLauncherTasksPosted = false;
+        sLauncherPageTasksPosted = false;
                 sLauncherFrameReportPending = true;
             }
             Class.forName("com.smartisanos.launcher.Aa")
@@ -9615,9 +10084,8 @@ public final class MaintainedLauncherSettingsHost {
     }
 
     private static Intent launcherHomeIntent(Context context) {
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.setClassName(context.getPackageName(), "com.smartisanos.launcher.Launcher");
-        intent.addCategory(Intent.CATEGORY_HOME);
+        Intent intent = com.smartisanos.launcher.gesture.LauncherHomeCompat
+                .createLauncherHomeIntent(context);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -10188,6 +10656,7 @@ public final class MaintainedLauncherSettingsHost {
     }
 
     private static void applyTheme(Activity activity, String id, String pkg, String name) {
+        invalidateThemeWallpaperSync();
         logOperation(activity, "ACTION", "apply_theme id=" + id + ", pkg=" + pkg + ", name=" + name
                 + ", before=" + themeDiagnosticState(activity)
                 + ", package_installed=" + packageInstalled(activity, pkg));
@@ -10933,7 +11402,7 @@ public final class MaintainedLauncherSettingsHost {
         }
     }
 
-    private static void setText(View view, String text) {
+    static void setText(View view, String text) {
         if (view instanceof TextView) {
             ((TextView) view).setText(text);
         } else if (view instanceof LinearLayout) {
@@ -10958,7 +11427,7 @@ public final class MaintainedLauncherSettingsHost {
         }
     }
 
-    private static Resources getMaintainedResources(Activity activity) {
+    static Resources getMaintainedResources(Activity activity) {
         try {
             return createSettingsContext(activity).getResources();
         } catch (Throwable ignored) {
@@ -10973,21 +11442,8 @@ public final class MaintainedLauncherSettingsHost {
         return "默认动画";
     }
 
-    private static void showDefaultHomeOptions(Activity activity) {
-        openDefaultHomeSettings(activity);
-    }
-
-    private static void openDefaultHomeSettings(Activity activity) {
-        logOperation(activity, "ACTION", "open_default_home_settings");
-        if (requestHomeRole(activity)) return;
-        if (startAction(activity, "android.settings.HOME_SETTINGS")) return;
-        if (startAction(activity, "android.settings.MANAGE_DEFAULT_APPS_SETTINGS")) return;
-        if (startAction(activity, "miui.intent.action.PREFERRED_APPLICATION_SETTINGS")) return;
-        if (startAction(activity, Settings.ACTION_SETTINGS)) return;
-        showInfoDialog(activity,
-                getString(getMaintainedResources(activity), "set_to_default_home_title", "设置默认桌面"),
-                getString(getMaintainedResources(activity), "default_home_open_settings_failed",
-                        "无法直接打开默认桌面设置，请在系统设置中将锤子桌面设为默认桌面。"));
+    private static void showDefaultHomeOptions(final Activity activity) {
+        showDefaultHomePage(activity, true);
     }
 
     private static Dialog showSmartisanProgressDialog(Activity activity, String message) {
@@ -11060,32 +11516,11 @@ public final class MaintainedLauncherSettingsHost {
         }
     }
 
-    private static boolean canShowDialog(Activity activity) {
+    static boolean canShowDialog(Activity activity) {
         return activity != null && !activity.isFinishing()
                 && (Build.VERSION.SDK_INT < 17 || !activity.isDestroyed());
     }
 
-
-    private static boolean requestHomeRole(Activity activity) {
-        if (Build.VERSION.SDK_INT < 29) {
-            return false;
-        }
-        try {
-            Object roleManager = activity.getSystemService("role");
-            if (roleManager == null) return false;
-            Class<?> cls = Class.forName("android.app.role.RoleManager");
-            String roleHome = (String) cls.getField("ROLE_HOME").get(null);
-            Boolean available = (Boolean) cls.getMethod("isRoleAvailable", String.class).invoke(roleManager, roleHome);
-            if (!available.booleanValue()) return false;
-            Boolean held = (Boolean) cls.getMethod("isRoleHeld", String.class).invoke(roleManager, roleHome);
-            if (held.booleanValue()) return false;
-            Intent intent = (Intent) cls.getMethod("createRequestRoleIntent", String.class).invoke(roleManager, roleHome);
-            activity.startActivityForResult(intent, 0);
-            return true;
-        } catch (Throwable ignored) {
-            return false;
-        }
-    }
 
     private static boolean startAction(Activity activity, String action) {
         try {
@@ -11791,8 +12226,10 @@ public final class MaintainedLauncherSettingsHost {
 
     public static synchronized void prepareLauncherDeferredTasks(Activity activity) {
         sDeferredLauncherActivity = new WeakReference<Activity>(activity);
+        sLauncherResumeReportPending = false;
         sLauncherFirstFrameReady = false;
         sDeferredLauncherTasksPosted = false;
+        sLauncherPageTasksPosted = false;
         sLauncherFrameReportPending = true;
         sLastBadgeHidden = null;
     }
@@ -11813,13 +12250,37 @@ public final class MaintainedLauncherSettingsHost {
         }
         synchronized (MaintainedLauncherSettingsHost.class) {
             sDeferredLauncherActivity = new WeakReference<Activity>(activity);
-            if (sLauncherFirstFrameReady && !sLauncherFrameReportPending) {
-                sLauncherFirstFrameReady = false;
-                sDeferredLauncherTasksPosted = false;
-                sLauncherFrameReportPending = true;
+            // Cold/reload preparation owns the startup gate. A normal APP return
+            // consumes only the existing dirty/TTL refreshes after a GL update.
+            if (sDeferredLauncherTasksPosted) {
+                sLauncherResumeReportPending = true;
             }
         }
         postDeferredLauncherTasksIfReady();
+    }
+
+    public static void onLauncherResumeFrame() {
+        if (!sLauncherResumeReportPending) return;
+        final Activity activity;
+        synchronized (MaintainedLauncherSettingsHost.class) {
+            if (!sLauncherResumeReportPending) return;
+            sLauncherResumeReportPending = false;
+            activity = sDeferredLauncherActivity == null ? null : sDeferredLauncherActivity.get();
+        }
+        if (activity == null) return;
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override public void run() {
+                Activity current = sDeferredLauncherActivity == null ? null : sDeferredLauncherActivity.get();
+                if (current != activity || activity.isFinishing() || activity.isDestroyed()
+                        || activity.getWindow().getDecorView().getWindowVisibility() != View.VISIBLE) return;
+                com.smartisanos.launcher.gesture.LauncherHomeCompat.mark("RESUME_DIRTY_TASKS");
+                maybeRefreshLauncherWallpaper(activity);
+                applyBadgeIfDirty(activity);
+                if (LauncherSettingBridge.dynamicWeatherCalendarEnabled(activity)) {
+                    WeatherBridge.onLauncherResume(activity);
+                }
+            }
+        });
     }
 
     public static void onLauncherFirstFrame() {
@@ -11848,13 +12309,10 @@ public final class MaintainedLauncherSettingsHost {
             public void run() {
                 com.smartisanos.launcher.diagnostics.LauncherStartupDiagnostics
                         .mark("LAUNCH_DEFERRED_TASKS_BEGIN");
-                com.smartisanos.launcher.quicksearch.SearchIndexRepository.get(activity)
-                        .scheduleWarmup("first_frame");
+                com.smartisanos.launcher.gesture.LauncherHomeCompat.mark("COLD_DEFERRED_TASKS");
                 applyProcessCompatOnce();
                 applyNavigationBarIfChanged(activity);
-                maybeRefreshLauncherWallpaper(activity);
                 applyBadgeIfDirty(activity);
-                ensureIconRasterRevision(activity);
                 if (LauncherSettingBridge.dynamicWeatherCalendarEnabled(activity)) {
                     WeatherBridge.onLauncherResume(activity);
                 }
@@ -11865,6 +12323,33 @@ public final class MaintainedLauncherSettingsHost {
                 }
                 consumeDeferredRestoreStatusToast(activity);
                 completePendingReloadAfterFirstFrame();
+                com.smartisanos.launcher.diagnostics.LauncherStartupDiagnostics
+                        .mark("LAUNCH_DEFERRED_TASKS_END");
+            }
+        });
+    }
+
+    public static void onLauncherPageReady() {
+        com.smartisanos.launcher.theme.IconRasterDiagnostics.onDesktopPageReady();
+        final Activity activity = sDeferredLauncherActivity == null
+                ? null : sDeferredLauncherActivity.get();
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) return;
+        synchronized (MaintainedLauncherSettingsHost.class) {
+            if (sLauncherPageTasksPosted) return;
+            sLauncherPageTasksPosted = true;
+        }
+        activity.getWindow().getDecorView().postOnAnimation(new Runnable() {
+            @Override public void run() {
+                if (activity.isFinishing() || activity.isDestroyed()
+                        || sDeferredLauncherActivity == null
+                        || sDeferredLauncherActivity.get() != activity) return;
+                com.smartisanos.launcher.diagnostics.LauncherStartupDiagnostics
+                        .mark("LAUNCH_OPTIONAL_PAGE_TASKS_BEGIN");
+                com.smartisanos.launcher.quicksearch.SearchIndexRepository.get(activity)
+                        .scheduleWarmup("page_ready");
+                ensureThemeSystemWallpaper(activity);
+                maybeRefreshLauncherWallpaper(activity);
+                ensureIconRasterRevision(activity);
                 final Context app = activity.getApplicationContext();
                 if (app != null && !OriginalQuickSearchResources.isPrepared(app)) {
                     com.smartisanos.home.settings.icons.IconPreviewRepository.get(app).schedule(
@@ -11877,7 +12362,7 @@ public final class MaintainedLauncherSettingsHost {
                             }});
                 }
                 com.smartisanos.launcher.diagnostics.LauncherStartupDiagnostics
-                        .mark("LAUNCH_DEFERRED_TASKS_END");
+                        .mark("LAUNCH_OPTIONAL_PAGE_TASKS_END");
             }
         });
     }
@@ -12446,7 +12931,7 @@ public final class MaintainedLauncherSettingsHost {
         });
     }
 
-    private static String settingsPageId(View root) {
+    static String settingsPageId(View root) {
         if (root == null) return null;
         Object tag = root.getTag();
         if (tag instanceof String && !TextUtils.isEmpty((String) tag)) {
@@ -12623,15 +13108,40 @@ public final class MaintainedLauncherSettingsHost {
     }
 
     private static void showAboutPage(final Activity activity) {
+        showAboutPage(activity, true);
+    }
+
+    static void showAboutPage(final Activity activity, boolean forward) {
         try {
             final SettingsResourceContext context = createSettingsContext(activity);
             Resources resources = context.getResources();
             View root = inflate(activity, context, "setting_about_us");
+            View aboutLogo = find(resources, root, "about_logo_image");
+            if (aboutLogo instanceof ImageView) {
+                ((ImageView) aboutLogo).setImageDrawable(IconBitmapDecoder.loadResourceDrawablePreservingPixels(
+                        resources, drawable(resources, "about_logo")));
+            }
             bindBackTitle(activity, resources, root, "view_title",
                     getString(resources, "setting_about_us", "关于我们"), "ABOUT", backToMainAction(activity));
             hide(resources, root, "setting_more_product");
+            click(activity, resources, root, "setting_follow_weixin", new View.OnClickListener() {
+                public void onClick(View view) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW,
+                                Uri.parse(getString(resources, "author_bilibili_url", "")));
+                        intent.addCategory(Intent.CATEGORY_BROWSABLE);
+                        activity.startActivity(intent);
+                    } catch (android.content.ActivityNotFoundException | SecurityException error) {
+                        Toast.makeText(activity, getString(resources, "author_homepage_open_failed", ""),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+            click(activity, resources, root, "setting_developer_support", new View.OnClickListener() {
+                public void onClick(View view) { DeveloperSupportPage.show(activity); }
+            });
             tuneScrollBars(root);
-            setSettingsContentView(activity, context, resources, root, true);
+            setSettingsContentView(activity, context, resources, root, forward);
         } catch (Throwable t) {
             showInfoDialog(activity, "关于我们",
                     "锤子桌面 original-port\n版本：" + appVersion(activity)
@@ -12793,7 +13303,7 @@ public final class MaintainedLauncherSettingsHost {
         android.util.Log.d("FlingUpGesture", "FLING_UP_STATE_RESET " + detail);
     }
 
-    private static void logOperation(Context ignoredContext, String event, String detail) {
+    static void logOperation(Context ignoredContext, String event, String detail) {
         // Existing diagnostics callers stay side-effect-free here so settings
         // behavior is unchanged.
     }
@@ -13177,16 +13687,27 @@ public final class MaintainedLauncherSettingsHost {
                     showDesktopBackupPage(activity, false);
                 } else if ("BACKUP_CANCELLED".equals(result.errorCode)) {
                     showDesktopBackupPage(activity, false);
-                } else if ("BACKUP_LOCATION_READ_ONLY".equals(result.errorCode)
-                        || "BACKUP_LOCATION_PERMISSION_LOST".equals(result.errorCode)) {
-                    showInfoDialog(activity,
-                            getString(resources, "backup_location_unavailable", "备份位置不可用"),
-                            backupResultMessage(resources, result));
-                } else showInfoDialog(activity,
-                        getString(resources, "backup_dialog_title", "桌面备份"),
-                        backupResultMessage(resources, result));
+                } else showBackupFailureDialog(activity, resources, result);
             }
         };
+    }
+
+    private static void showBackupFailureDialog(final Activity activity, Resources resources,
+            BackupRestoreResult result) {
+        if ("BACKUP_LOCATION_PERMISSION_LOST".equals(result.errorCode)) {
+            showChoiceDialog(activity,
+                    getString(resources, "backup_location_unavailable", "备份位置不可用"),
+                    backupResultMessage(resources, result),
+                    getString(resources, "cancel", "取消"), "重新选择目录",
+                    null, new View.OnClickListener() {
+                        public void onClick(View view) { openBackupTree(activity, false); }
+                    });
+        } else {
+            String title = "BACKUP_LOCATION_READ_ONLY".equals(result.errorCode)
+                    ? getString(resources, "backup_location_unavailable", "备份位置不可用")
+                    : getString(resources, "backup_dialog_title", "桌面备份");
+            showInfoDialog(activity, title, backupResultMessage(resources, result));
+        }
     }
 
     private static boolean onBackupActivityResult(Activity activity, int requestCode,
@@ -13220,21 +13741,6 @@ public final class MaintainedLauncherSettingsHost {
         return false;
     }
 
-    private static void confirmBackupOverwrite(final Activity activity, final Uri treeUri,
-            final String fileName) {
-        Resources resources = getMaintainedResources(activity);
-        showChoiceDialog(activity,
-                getString(resources, "backup_overwrite_title", "覆盖备份"),
-                getString(resources, "backup_overwrite_message", "已存在同名备份，是否覆盖？"),
-                getString(resources, "cancel", "取消"),
-                getString(resources, "backup_overwrite_action", "覆盖"),
-                null, new View.OnClickListener() {
-                    public void onClick(View v) {
-                        savePreparedBackup(activity, fileName, true);
-                    }
-                });
-    }
-
     private static void savePreparedBackup(final Activity activity, String fileName,
             boolean overwrite) {
         final Resources resources = getMaintainedResources(activity);
@@ -13261,7 +13767,9 @@ public final class MaintainedLauncherSettingsHost {
             return;
         }
         Uri existing = DesktopBackupController.findTreeBackup(activity, treeUri, fileName);
-        if (existing != null) confirmBackupOverwrite(activity, treeUri, fileName);
+        if (existing != null) showInfoDialog(activity,
+                getString(resources, "backup_name_title", "备份名称"),
+                "已保留同名备份，请更换名称后保存。");
         else savePreparedBackup(activity, fileName, false);
     }
 
@@ -13279,9 +13787,7 @@ public final class MaintainedLauncherSettingsHost {
                 if (!canShowDialog(activity) || pendingRoot.getParent() == null) return;
                 showDesktopBackupPage(activity, false);
                 if (result != null && !"BACKUP_CANCELLED".equals(result.errorCode)) {
-                    showInfoDialog(activity,
-                            getString(resources, "backup_dialog_title", "桌面备份"),
-                            backupResultMessage(resources, result));
+                    showBackupFailureDialog(activity, resources, result);
                 }
             }
             public void onPreview(BackupArchiveReader.ValidatedBackup backup,
@@ -13790,6 +14296,24 @@ public final class MaintainedLauncherSettingsHost {
             return getString(resources, "backup_success", "桌面备份已完成");
         }
         String code = result == null ? "" : result.errorCode;
+        if ("BACKUP_METADATA_PENDING".equals(code)) {
+            return "备份文件已保存，但完成记录尚未更新，请稍后重试。";
+        }
+        if ("BACKUP_JOURNAL_CORRUPT".equals(code)) {
+            return "备份记录已损坏，已停止备份并保留原记录，请联系开发者处理。";
+        }
+        if ("BACKUP_JOURNAL_READ_FAILED".equals(code)) {
+            return "无法读取备份记录，已停止备份，请检查存储状态后重试。";
+        }
+        if ("BACKUP_CLEANUP_PENDING".equals(code)) {
+            return "上次备份尚未清理完成，请恢复原目录访问权限后重试。";
+        }
+        if ("BACKUP_NAME_EXISTS".equals(code)) {
+            return "已保留同名备份，请更换名称后保存。";
+        }
+        if ("BACKUP_TREE_LIST_FAILED".equals(code)) {
+            return "无法确认目录内已有备份，请重新选择目录后重试。";
+        }
         if ("BACKUP_LOCATION_PERMISSION_LOST".equals(code)) {
             return getString(resources, "backup_error_permission_lost", "备份目录授权已失效，请重新选择。");
         }
@@ -13978,22 +14502,14 @@ public final class MaintainedLauncherSettingsHost {
                     } else {
                         WeatherBridge.scheduleRefresh(activity, true);
                         Toast.makeText(activity, "正在刷新天气", Toast.LENGTH_SHORT).show();
-                        root.postDelayed(new Runnable() { public void run() {
-                            updateDynamicWeatherStatus(activity, resources, root);
-                        }}, 1800L);
                     }
                 }
             });
             updateDynamicWeatherStatus(activity, resources, root);
+            bindWeatherStatusUpdates(activity, resources, root);
             tuneScrollBars(root);
             setSettingsContentView(activity, context, resources, root, true);
             WeatherBridge.scheduleCityResolution(activity);
-            root.postDelayed(new Runnable() { public void run() {
-                updateDynamicWeatherStatus(activity, resources, root);
-            }}, 3500L);
-            root.postDelayed(new Runnable() { public void run() {
-                updateDynamicWeatherStatus(activity, resources, root);
-            }}, 10000L);
         } catch (Throwable failure) {
             Log.w(LOG_TAG, "Unable to open dynamic weather settings", failure);
             showInfoDialog(activity, "动态天气", "无法打开动态天气设置");
@@ -14084,6 +14600,36 @@ public final class MaintainedLauncherSettingsHost {
                     WeatherBridge.requestLocationPermission(activity);
                 }
                 updateDynamicWeatherStatus(activity, resources, root);
+            }
+        });
+    }
+
+    private static void bindWeatherStatusUpdates(final Activity activity,
+            final Resources resources, final View root) {
+        final Runnable update = new Runnable() {
+            @Override public void run() {
+                if (root.isAttachedToWindow() && !activity.isFinishing()
+                        && !activity.isDestroyed()) {
+                    updateDynamicWeatherStatus(activity, resources, root);
+                }
+            }
+        };
+        final SharedPreferences.OnSharedPreferenceChangeListener listener =
+                new SharedPreferences.OnSharedPreferenceChangeListener() {
+                    @Override public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+                        if (!root.isAttachedToWindow()) return;
+                        root.removeCallbacks(update);
+                        root.post(update);
+                    }
+                };
+        root.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            @Override public void onViewAttachedToWindow(View view) {
+                WeatherBridge.registerStatusListener(activity, listener);
+                root.post(update);
+            }
+            @Override public void onViewDetachedFromWindow(View view) {
+                WeatherBridge.unregisterStatusListener(activity, listener);
+                root.removeCallbacks(update);
             }
         });
     }
@@ -14218,15 +14764,6 @@ public final class MaintainedLauncherSettingsHost {
                     updateDynamicWeatherStatus(activity, resources, pageRoot);
                     Toast.makeText(activity, "已切换到 " + cities.get(which).displayName(),
                             Toast.LENGTH_SHORT).show();
-                    pageRoot.postDelayed(new Runnable() { public void run() {
-                        updateDynamicWeatherStatus(activity, resources, pageRoot);
-                    }}, 700L);
-                    pageRoot.postDelayed(new Runnable() { public void run() {
-                        updateDynamicWeatherStatus(activity, resources, pageRoot);
-                    }}, 2200L);
-                    pageRoot.postDelayed(new Runnable() { public void run() {
-                        updateDynamicWeatherStatus(activity, resources, pageRoot);
-                    }}, 5000L);
                 }
             });
             rows.addView(row, new LinearLayout.LayoutParams(-1, dp(activity, 54)));
@@ -14522,7 +15059,7 @@ public final class MaintainedLauncherSettingsHost {
         }
     }
 
-    private static void click(Context context, Resources resources, View root, String idName, View.OnClickListener listener) {
+    static void click(Context context, Resources resources, View root, String idName, View.OnClickListener listener) {
         View view = find(resources, root, idName);
         if (view != null) {
             if (view instanceof SettingItemSwitch
@@ -14567,7 +15104,7 @@ public final class MaintainedLauncherSettingsHost {
         }
     }
 
-    private static View find(Resources resources, View root, String idName) {
+    static View find(Resources resources, View root, String idName) {
         int id = resources.getIdentifier(idName, "id", SETTINGS_PKG);
         return id == 0 ? null : root.findViewById(id);
     }
@@ -17373,7 +17910,8 @@ public final class MaintainedLauncherSettingsHost {
         if (!dir.exists() && !dir.mkdirs()) {
             throw new IllegalStateException("mkdirs failed: " + dir);
         }
-        String fileName = Integer.toHexString(key.hashCode()) + ".png";
+        String[] parts = splitIconKey(key);
+        String fileName = RedirectIconDB.customFileName(parts[0], parts[1]);
         File out = new File(dir, fileName);
         java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
         icon.compress(Bitmap.CompressFormat.PNG, 100, bytes);
@@ -19394,12 +19932,24 @@ public final class MaintainedLauncherSettingsHost {
     }
 
     /** RAW artwork and chooser identity are decided together, never from file existence alone. */
-    private static final class ManagedIconSource {
+    static final class ManagedIconSource {
         final Drawable drawable;
         final String choiceKey;
+        final String desktopType;
+        final String desktopIdentity;
+        final String desktopHash;
         ManagedIconSource(Drawable drawable, String key) {
+            this(drawable, key, null, null);
+        }
+        ManagedIconSource(Drawable drawable, String key, String type, String identity) {
+            this(drawable, key, type, identity, null);
+        }
+        ManagedIconSource(Drawable drawable, String key, String type, String identity, String hash) {
             this.drawable = drawable;
             this.choiceKey = drawable == null ? "DEFAULT" : key;
+            this.desktopType = type;
+            this.desktopIdentity = identity;
+            this.desktopHash = hash;
         }
     }
 
@@ -19413,6 +19963,12 @@ public final class MaintainedLauncherSettingsHost {
         if (context == null || info == null || info.activityInfo == null) return new ManagedIconSource(null, "DEFAULT");
         ActivityInfo ai = info.activityInfo;
         RedirectIconInfo redirect = RedirectIconDB.getRedirectIconInfo(context, ai.packageName, ai.name);
+        return resolveManagedIconSource(context, info, resources, temporaryGlobal, redirect);
+    }
+
+    private static ManagedIconSource resolveManagedIconSource(Context context, ResolveInfo info, Resources resources,
+            IconSourceManager.Selection temporaryGlobal, RedirectIconInfo redirect) {
+        ActivityInfo ai = info.activityInfo;
         String mode = RedirectIconDB.modeOf(redirect);
         if (RedirectIconDB.MODE_ORIGINAL.equals(mode)) return new ManagedIconSource(null, "DEFAULT");
         if (RedirectIconDB.MODE_CUSTOM.equals(mode)) {
@@ -19475,7 +20031,7 @@ public final class MaintainedLauncherSettingsHost {
 
     private static boolean hasManualIconOverride(Context context, ActivityInfo activityInfo) {
         if (context == null || activityInfo == null) return false;
-        RedirectIconInfo info = RedirectIconDB.getRedirectIconInfo(context,
+        RedirectIconInfo info = RedirectIconDB.getRedirectIconMetadata(context,
                 activityInfo.packageName, activityInfo.name);
         String mode = RedirectIconDB.modeOf(info);
         return RedirectIconDB.MODE_CUSTOM.equals(mode) || RedirectIconDB.MODE_RESOURCE.equals(mode)
@@ -19704,23 +20260,23 @@ public final class MaintainedLauncherSettingsHost {
     private static Drawable maintainedResourceIcon(Context context, Resources resources, String name) {
         if (TextUtils.isEmpty(name)) return null;
         String resourceName = candidateIdToDrawableName(name);
-        Drawable icon = safeDrawable(resources, drawable(resources, resourceName));
+        Drawable icon = IconBitmapDecoder.loadResourceDrawablePreservingPixels(resources, drawable(resources, resourceName));
         if (icon != null) {
             return icon;
         }
-        icon = safeDrawable(resources, drawable(resources, name));
+        icon = IconBitmapDecoder.loadResourceDrawablePreservingPixels(resources, drawable(resources, name));
         if (icon != null || context == null) {
             return icon;
         }
         try {
             Resources appResources = context.getResources();
-            icon = safeDrawable(appResources,
-                    appResources.getIdentifier(resourceName, "drawable", context.getPackageName()));
+            icon = IconBitmapDecoder.loadResourceDrawablePreservingPixels(appResources,
+                    IconPreviewRepository.drawableResourceId(appResources, resourceName, context.getPackageName()));
             if (icon != null) {
                 return icon;
             }
-            return safeDrawable(appResources, appResources.getIdentifier(name,
-                    "drawable", context.getPackageName()));
+            return IconBitmapDecoder.loadResourceDrawablePreservingPixels(appResources, IconPreviewRepository.drawableResourceId(appResources,
+                    name, context.getPackageName()));
         } catch (Throwable ignored) {
             return null;
         }

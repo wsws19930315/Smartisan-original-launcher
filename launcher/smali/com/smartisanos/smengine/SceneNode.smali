@@ -413,9 +413,22 @@
     invoke-virtual {p0, v0}, Lcom/smartisanos/smengine/SceneNode;->setMotionEventSplittingEnabled(Z)V
 
     .line 44
-    invoke-static {}, Lcom/smartisanos/smengine/SceneNode;->nCreateNative()J
-
+    # Only these existing owners write the engine's batch matrix/light arrays.
+    instance-of v0, p0, Lcom/smartisanos/launcher/view/b/ka;
+    if-nez v0, :native_batch_owner_ready
+    instance-of v0, p0, Lcom/smartisanos/launcher/view/b;
+    if-nez v0, :native_batch_owner_ready
+    instance-of v0, p0, Lcom/smartisanos/launcher/view/c;
+    :native_batch_owner_ready
+    invoke-static {v0}, Lcom/smartisanos/launcher/compat/NativeBatchAllocation;->create(Z)J
     move-result-wide v0
+    const-wide/16 v2, 0x0
+    cmp-long v2, v0, v2
+    if-nez v2, :native_node_allocated
+    # 32-bit devices retain the original library and constructor.
+    invoke-static {}, Lcom/smartisanos/smengine/SceneNode;->nCreateNative()J
+    move-result-wide v0
+    :native_node_allocated
 
     iput-wide v0, p0, Lcom/smartisanos/smengine/SceneNode;->mSceneNodeTransformNative:J
 

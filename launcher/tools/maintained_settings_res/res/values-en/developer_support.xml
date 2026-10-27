@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="donate_title">Support the developer</string>
+    <string name="donate_description">If you enjoy this familiar launcher experience, you are welcome to buy the developer a coffee.\nYour support is a little extra motivation to keep improving it.</string>
+    <string name="donate_wechat">WeChat donation</string>
+    <string name="donate_alipay">Alipay donation</string>
+    <string name="donate_footer">Completely voluntary. All features remain available. Thank you for your support.</string>
+    <string name="donate_wechat_code">WeChat donation QR code</string>
+    <string name="donate_alipay_code">Alipay donation QR code</string>
+    <string name="donate_image_error">Could not load the local QR code. Please go back and open this page again.</string>
+    <string name="donate_page_error">Could not open this page. Please go back and try again.</string>
+</resources>

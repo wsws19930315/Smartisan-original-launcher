@@ -27,16 +27,13 @@ public final class RestoreRecoveryGuard {
             if (entry.state.ordinal() < RestoreOperationJournal.State.ROLLBACK_READY.ordinal()) {
                 journal.reset();
                 BackupFileUtils.deleteRecursively(new File(entry.stagingPath));
+                DesktopRestoreController.discardPendingRollback(context, entry);
                 return;
             }
             if (entry.state == RestoreOperationJournal.State.COMMITTED
-                    || entry.state == RestoreOperationJournal.State.CLEANING) {
-                journal.reset();
-                BackupFileUtils.deleteRecursively(new File(entry.stagingPath));
-                return;
-            }
-            if (entry.state == RestoreOperationJournal.State.ROLLED_BACK) {
-                journal.reset();
+                    || entry.state == RestoreOperationJournal.State.CLEANING
+                    || entry.state == RestoreOperationJournal.State.ROLLED_BACK) {
+                DesktopRestoreController.finishRestoreFiles(context, journal, entry);
                 return;
             }
             journal.write(entry, RestoreOperationJournal.State.ROLLING_BACK, null);
@@ -45,12 +42,14 @@ public final class RestoreRecoveryGuard {
                     context, entry.operationToken, "BACKUP_RESTORE_RECOVERY")) {
                 throw new IllegalStateException("Rollback did not complete");
             }
-            journal.reset();
+            DesktopRestoreController.finishRestoreFiles(context, journal, journal.read());
             context.getSharedPreferences(DesktopBackupController.PREFS, 0).edit()
                     .putString("pending_restore_toast", "RESTORE_RECOVERY_ROLLED_BACK").commit();
             Log.i(TAG, "RECOVERY_ROLLBACK_COMPLETE");
         } catch (RestoreOperationJournal.JournalException error) {
             DesktopRestoreController.deferFailure(context, error.errorCode, error);
+        } catch (DesktopRestoreController.RollbackSnapshotException error) {
+            DesktopRestoreController.deferFailure(context, "RESTORE_ROLLBACK_CREATE_FAILED", error);
         } catch (IOException error) {
             DesktopRestoreController.deferFailure(context, "RESTORE_WRITER_LOCK_FAILED", error);
         } catch (Throwable error) {

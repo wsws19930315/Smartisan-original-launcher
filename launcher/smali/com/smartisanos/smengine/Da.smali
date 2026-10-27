@@ -12,6 +12,8 @@
 # instance fields
 .field private mBitmap:Landroid/graphics/Bitmap;
 
+.field private mContextGeneration:I
+
 .field private mHeight:F
 
 .field private mName:Ljava/lang/String;
@@ -1045,6 +1047,11 @@
     iget-object v0, p0, Lcom/smartisanos/smengine/Da;->mBitmap:Landroid/graphics/Bitmap;
 
     invoke-static {v2, v4, v0, v4}, Lcom/smartisanos/smengine/P;->texImage2D(IILandroid/graphics/Bitmap;I)V
+
+    # A retained text descriptor is reusable only after upload in the current EGL context.
+    invoke-static {}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->getEglContextGeneration()I
+    move-result v5
+    iput v5, p0, Lcom/smartisanos/smengine/Da;->mContextGeneration:I
     :try_end_0
     .catch Ljava/lang/NullPointerException; {:try_start_0 .. :try_end_0} :catch_1
     .catch Ljava/lang/IllegalArgumentException; {:try_start_0 .. :try_end_0} :catch_0
@@ -1565,6 +1572,12 @@
     .line 1
     iget p0, p0, Lcom/smartisanos/smengine/Da;->mHeight:F
 
+    return p0
+.end method
+
+.method public getContextGeneration()I
+    .locals 0
+    iget p0, p0, Lcom/smartisanos/smengine/Da;->mContextGeneration:I
     return p0
 .end method
 

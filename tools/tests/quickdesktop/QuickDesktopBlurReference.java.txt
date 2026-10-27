@@ -1,0 +1,73 @@
+package com.smartisanos.launcher.quickdesktop;
+import android.graphics.Bitmap;
+
+/** Frozen pre-optimization kernel: exact integer/pixel oracle, never production code. */
+final class QuickDesktopBlurReference {
+    private static void blur(Bitmap bitmap, int radius, int passes) {
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        int[] pixels = new int[width * height];
+        int[] scratch = new int[pixels.length];
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+        for (int pass = 0; pass < passes; pass++) {
+            blurHorizontal(pixels, scratch, width, height, radius);
+            blurVertical(scratch, pixels, width, height, radius);
+        }
+        bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+    }
+
+    private static void blurHorizontal(int[] source, int[] target, int width, int height,
+                                       int radius) {
+        int diameter = radius * 2 + 1;
+        for (int y = 0; y < height; y++) {
+            int row = y * width;
+            int a = 0, r = 0, g = 0, b = 0;
+            for (int offset = -radius; offset <= radius; offset++) {
+                int color = source[row + clamp(offset, 0, width - 1)];
+                a += color >>> 24;
+                r += (color >> 16) & 0xff;
+                g += (color >> 8) & 0xff;
+                b += color & 0xff;
+            }
+            for (int x = 0; x < width; x++) {
+                target[row + x] = ((a / diameter) << 24) | ((r / diameter) << 16)
+                        | ((g / diameter) << 8) | (b / diameter);
+                int removed = source[row + clamp(x - radius, 0, width - 1)];
+                int added = source[row + clamp(x + radius + 1, 0, width - 1)];
+                a += (added >>> 24) - (removed >>> 24);
+                r += ((added >> 16) & 0xff) - ((removed >> 16) & 0xff);
+                g += ((added >> 8) & 0xff) - ((removed >> 8) & 0xff);
+                b += (added & 0xff) - (removed & 0xff);
+            }
+        }
+    }
+
+    private static void blurVertical(int[] source, int[] target, int width, int height,
+                                     int radius) {
+        int diameter = radius * 2 + 1;
+        for (int x = 0; x < width; x++) {
+            int a = 0, r = 0, g = 0, b = 0;
+            for (int offset = -radius; offset <= radius; offset++) {
+                int color = source[clamp(offset, 0, height - 1) * width + x];
+                a += color >>> 24;
+                r += (color >> 16) & 0xff;
+                g += (color >> 8) & 0xff;
+                b += color & 0xff;
+            }
+            for (int y = 0; y < height; y++) {
+                target[y * width + x] = ((a / diameter) << 24) | ((r / diameter) << 16)
+                        | ((g / diameter) << 8) | (b / diameter);
+                int removed = source[clamp(y - radius, 0, height - 1) * width + x];
+                int added = source[clamp(y + radius + 1, 0, height - 1) * width + x];
+                a += (added >>> 24) - (removed >>> 24);
+                r += ((added >> 16) & 0xff) - ((removed >> 16) & 0xff);
+                g += ((added >> 8) & 0xff) - ((removed >> 8) & 0xff);
+                b += (added & 0xff) - (removed & 0xff);
+            }
+        }
+    }
+
+    private static int clamp(int value, int minimum, int maximum) {
+        return Math.max(minimum, Math.min(maximum, value));
+    }
+}

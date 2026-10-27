@@ -137,7 +137,7 @@
 
     long-to-float p2, p6
 
-    const/high16 p3, 0x43fa0000    # 500.0f
+    const/high16 p3, 0x447a0000    # 1000.0f
 
     cmpl-float p2, p2, p3
 
@@ -190,7 +190,7 @@
     .line 10
     sget p2, Lcom/smartisanos/launcher/data/Constants;->window_height:I
 
-    invoke-static {v0, p5, p2}, Lcom/smartisanos/launcher/gesture/VerticalGestureDirectionConfig;->passesSearchStartRegion(Landroid/content/Context;FI)Z
+    invoke-static {p5, p2}, Lcom/smartisanos/launcher/gesture/VerticalGestureDirectionConfig;->passesSearchFinishRegion(FI)Z
 
     move-result p2
 

@@ -2202,7 +2202,27 @@
 
     .line 9
     :cond_0
+    # Headless non-Gaussian initialization uses unsuffixed bar resources below.
+    # Defer only this analysis to initByTheme after Activity geometry is ready.
+    sget-boolean v1, Lcom/smartisanos/launcher/data/Constants;->sIsGaussianTheme:Z
+    if-nez v1, :initial_wallpaper_analysis
+    sget-boolean v1, Lcom/smartisanos/launcher/data/Constants;->isTransparentTheme:Z
+    if-nez v1, :initial_wallpaper_analysis
+    sget-boolean v1, Lcom/smartisanos/launcher/data/Constants;->ENABLE_LARGE_SCREEN_MODE:Z
+    if-nez v1, :initial_wallpaper_analysis
+    sget v1, Lcom/smartisanos/launcher/data/Constants;->window_width:I
+    if-nez v1, :initial_wallpaper_analysis
+    sget v1, Lcom/smartisanos/launcher/data/Constants;->window_height:I
+    if-nez v1, :initial_wallpaper_analysis
+    instance-of v1, p0, Landroid/app/Application;
+    if-eqz v1, :initial_wallpaper_analysis
+    invoke-static {v0}, Lcom/smartisanos/launcher/theme/X;->h(Lcom/smartisanos/launcher/theme/v;)Z
+    move-result v1
+    if-nez v1, :initial_wallpaper_analysis
+    goto :initial_wallpaper_analysis_done
+    :initial_wallpaper_analysis
     invoke-static {p0}, Lcom/smartisanos/launcher/data/Constants;->initGaussianDarkLight(Landroid/content/Context;)V
+    :initial_wallpaper_analysis_done
 
     .line 10
     sget-boolean p0, Lcom/smartisanos/launcher/data/Constants;->sIsGaussianTheme:Z

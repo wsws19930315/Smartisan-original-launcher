@@ -331,6 +331,9 @@ public final class RedirectIconDB {
     private static byte[] readCustomBytes(Context context, String key) {
         try {
             File file = customFile(context, key);
+            if (file != null && !file.exists()) {
+                file = legacyCustomFile(context, key);
+            }
             if (file == null || !file.exists()) {
                 return null;
             }
@@ -370,17 +373,35 @@ public final class RedirectIconDB {
         if (context == null || key == null) {
             return null;
         }
-        File persistent = new File(new File(context.getFilesDir(), "redirect_icons"),
-                Integer.toHexString(key.hashCode()) + ".png");
-        if (!persistent.exists()) {
-            File legacy = new File(new File(context.getFilesDir(), "custom_icons"), persistent.getName());
-            if (legacy.exists()) {
-                File parent = persistent.getParentFile();
-                if (parent != null) parent.mkdirs();
-                legacy.renameTo(persistent);
+        return new File(new File(context.getFilesDir(), "redirect_icons"), customFileNameForKey(key));
+    }
+
+    /** Shared by persistent writes and backup export/restore; old names remain readable. */
+    public static String customFileName(String pkg, String cmp) {
+        return customFileNameForKey(key(pkg, cmp));
+    }
+
+    private static String customFileNameForKey(String key) {
+        try {
+            byte[] digest = java.security.MessageDigest.getInstance("SHA-256").digest(
+                    key.getBytes(java.nio.charset.Charset.forName("UTF-8")));
+            char[] hex = "0123456789abcdef".toCharArray();
+            StringBuilder name = new StringBuilder("v2_");
+            for (byte value : digest) {
+                name.append(hex[(value & 0xff) >>> 4]).append(hex[value & 0xf]);
             }
+            return name.append(".png").toString();
+        } catch (java.security.NoSuchAlgorithmException unavailable) {
+            throw new IllegalStateException("SHA-256 unavailable", unavailable);
         }
-        return persistent;
+    }
+
+    private static File legacyCustomFile(Context context, String key) {
+        String name = Integer.toHexString(key.hashCode()) + ".png";
+        File persistent = new File(new File(context.getFilesDir(), "redirect_icons"), name);
+        if (persistent.exists()) return persistent;
+        // Reads must not rename/delete a legacy file potentially shared by colliding keys.
+        return new File(new File(context.getFilesDir(), "custom_icons"), name);
     }
 
     private static String key(String pkg, String cmp) {

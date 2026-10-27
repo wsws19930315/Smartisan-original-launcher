@@ -328,6 +328,72 @@ public final class DeviceCheckpointProbe {
         check(journal.read().state == CREATING_ROLLBACK, "journal remains writable after torn write recovery");
         System.out.println("PASS TORN_WRITE_RESTART_CHECKS=" + checks);
     }
+    private static RestoreOperationJournal.Entry pendingSnapshot(ProbeContext context) throws Exception {
+        RestoreOperationJournal.Entry entry = entry(context);
+        entry.rollbackPath = new File(DesktopRestoreController.rollbackArchive(context).getParentFile(),
+                "preparing_" + entry.operationToken + "/archive.slauncherbackup").getAbsolutePath();
+        write(new File(entry.rollbackPath), "new-undo");
+        return entry;
+    }
+
+    private static void snapshotCases() throws Exception {
+        root = new File(root, "snapshot-cases"); root.mkdirs();
+        check(BackupOperationLock.acquire(new String("value-token")), "platform operation token acquired");
+        BackupOperationLock.release(new String("value-token"));
+        check(!BackupOperationLock.isBusy(), "platform equal token releases operation owner");
+        for (RestoreOperationJournal.State state : new RestoreOperationJournal.State[]{COMMITTED, ROLLED_BACK, CREATING_ROLLBACK}) {
+            ProbeContext context = fresh();
+            RestoreOperationJournal.Entry entry = pendingSnapshot(context);
+            new RestoreOperationJournal(context).write(entry, state, null);
+            RestoreRecoveryGuard.beforeLauncherDatabaseInit(context);
+            check(new RestoreOperationJournal(context).read().state == IDLE, "snapshot startup finishes " + state);
+            String expected = state == COMMITTED ? "new-undo" : "isolated-rollback";
+            check(new String(bytes(DesktopRestoreController.rollbackArchive(context)), BackupFileUtils.UTF_8).equals(expected),
+                    "snapshot startup preserves correct undo " + state);
+            check(!new File(entry.rollbackPath).getParentFile().exists(), "only pending snapshot cleaned " + state);
+        }
+        ProbeContext context = fresh();
+        RestoreOperationJournal.Entry entry = pendingSnapshot(context);
+        RestoreOperationJournal journal = new RestoreOperationJournal(context);
+        journal.write(entry, COMMITTED, null);
+        File latest = DesktopRestoreController.rollbackArchive(context).getParentFile();
+        Os.chmod(latest.getAbsolutePath(), 0550);
+        try {
+            boolean failed = false;
+            try (BackupOperationLock.RestoreWriter writer = BackupOperationLock.acquireRestoreWriter(context)) {
+                try { DesktopRestoreController.finishRestoreFiles(context, journal, entry); }
+                catch (DesktopRestoreController.RollbackSnapshotException expected) { failed = true; }
+            }
+            check(failed, "real EACCES blocks snapshot publication");
+            check(journal.read().state == COMMITTED && new File(entry.rollbackPath).isFile(), "publication failure retains retry state and new snapshot");
+            check(new String(bytes(DesktopRestoreController.rollbackArchive(context)), BackupFileUtils.UTF_8).equals("isolated-rollback"),
+                    "publication failure leaves old undo intact");
+        } finally { Os.chmod(latest.getAbsolutePath(), 0770); }
+        RestoreRecoveryGuard.beforeLauncherDatabaseInit(context);
+        check(journal.read().state == IDLE, "startup retries failed publication after storage recovery");
+        check(new String(bytes(DesktopRestoreController.rollbackArchive(context)), BackupFileUtils.UTF_8).equals("new-undo"),
+                "storage recovery publishes new undo");
+        System.out.println("PASS SNAPSHOT_PLATFORM_CHECKS=" + checks);
+    }
+
+    private static void snapshotRestart(boolean seed) throws Exception {
+        ProbeContext context = new ProbeContext(new File(root, "snapshot-restart"));
+        if (seed) {
+            RestoreOperationJournal.Entry entry = pendingSnapshot(context);
+            new RestoreOperationJournal(context).write(entry, COMMITTED, null);
+            java.io.FileOutputStream output = new java.io.FileOutputStream(new File(new File(entry.rollbackPath).getParentFile(), "publish.tmp"));
+            output.write("torn-new-undo".getBytes(BackupFileUtils.UTF_8)); output.getFD().sync();
+            killAfterMarker("snapshot-write-in-progress");
+        }
+        check(new String(bytes(DesktopRestoreController.rollbackArchive(context)), BackupFileUtils.UTF_8).equals("isolated-rollback"),
+                "process death during publication retains complete old undo");
+        RestoreRecoveryGuard.beforeLauncherDatabaseInit(context);
+        check(new RestoreOperationJournal(context).read().state == IDLE, "new process completes snapshot publication");
+        check(new String(bytes(DesktopRestoreController.rollbackArchive(context)), BackupFileUtils.UTF_8).equals("new-undo"),
+                "new process publishes candidate rather than torn bytes");
+        System.out.println("PASS SNAPSHOT_RESTART_CHECKS=" + checks);
+    }
+
     public static void main(String[] args) throws Exception {
         root = new File(args[0]).getCanonicalFile();
         if (!root.getPath().startsWith("/data/local/tmp/smartisan-restore-journal-f04-"))
@@ -347,6 +413,9 @@ public final class DeviceCheckpointProbe {
         else if (args[1].equals("guard-restart")) killedCheckpoint(false, true);
         else if (args[1].equals("torn-seed")) tornCheckpoint(true);
         else if (args[1].equals("torn-restart")) tornCheckpoint(false);
+        else if (args[1].equals("snapshot")) snapshotCases();
+        else if (args[1].equals("snapshot-seed")) snapshotRestart(true);
+        else if (args[1].equals("snapshot-restart")) snapshotRestart(false);
         else throw new IllegalArgumentException("Unknown probe mode");
     }
 }

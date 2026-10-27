@@ -29,6 +29,9 @@ for(String k:PreferenceBackupCodec.excludedSwitchKeys(archive)){check(!files.get
 PreferenceBackupCodec.restore(target,archive);for(String k:PreferenceBackupCodec.excludedSwitchKeys(archive))check(value(target,"launcher_settings",k)==null);
 JSONObject old=new JSONObject().put("files",new JSONObject().put(FILE,new JSONObject()));target.getSharedPreferences(FILE,0).edit().putBoolean(KEY,true).commit();PreferenceBackupCodec.restore(target,old);check(Boolean.TRUE.equals(value(target,FILE,KEY)));check(PreferenceBackupCodec.excludedSwitchKeys(old).size()==6);
 JSONObject subset=new JSONObject().put("excludedSwitches",new JSONArray().put("search_contacts_enabled").put("search_contacts_enabled").put("unexpected"));check(PreferenceBackupCodec.excludedSwitchKeys(subset).size()==1);check(PreferenceBackupCodec.excludedSwitchKeys(subset).get(0).equals("search_contacts_enabled"));
+source.getSharedPreferences(FILE,0).edit().putString("launcher_global_icon_source_v2","pack:org.example.pack").putString("prefs_key_selected_icon_pack","org.example.pack").putBoolean("launcher_improved_icon_enabled",false).commit();
+PreferenceBackupCodec.restore(target,PreferenceBackupCodec.encode(source));check("pack:org.example.pack".equals(value(target,FILE,"launcher_global_icon_source_v2")));check("org.example.pack".equals(value(target,FILE,"prefs_key_selected_icon_pack")));
+source.getSharedPreferences(FILE,0).edit().putString("launcher_global_icon_source_v2","improved").putBoolean("launcher_improved_icon_enabled",true).commit();PreferenceBackupCodec.restore(target,PreferenceBackupCodec.encode(source));check("improved".equals(value(target,FILE,"launcher_global_icon_source_v2")));check(Boolean.TRUE.equals(value(target,FILE,"launcher_improved_icon_enabled")));
 System.out.println("PASS production backup preference checks="+checks);}}
 '''}
 def main():

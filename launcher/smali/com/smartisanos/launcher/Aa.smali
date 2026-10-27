@@ -3799,7 +3799,11 @@
 
     iput-object v1, v0, Landroid/content/pm/ResolveInfo;->activityInfo:Landroid/content/pm/ActivityInfo;
 
-    const-string v1, "\u684c\u9762\u8bbe\u7f6e"
+    const-string v1, "Desktop Settings"
+
+    invoke-static {v1}, Lcom/smartisanos/launcher/theme/MaintainedLauncherSettingsHost;->localizedDesktopSettingsLabel(Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v1
 
     iput-object v1, v0, Landroid/content/pm/ResolveInfo;->nonLocalizedLabel:Ljava/lang/CharSequence;
 

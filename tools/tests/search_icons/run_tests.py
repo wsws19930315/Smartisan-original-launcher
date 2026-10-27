@@ -4,8 +4,10 @@ import importlib.util
 import pathlib
 import shutil
 import subprocess
+import sys
 import tempfile
 
+sys.dont_write_bytecode = True
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 spec = importlib.util.spec_from_file_location("unlock_stubs", ROOT / "tools/tests/unlock/run_tests.py")
 module = importlib.util.module_from_spec(spec)
@@ -60,10 +62,16 @@ public class BitmapFactory {public static class Options {public boolean inJustDe
 ''',
     "com/smartisanos/launcher/Aa.java": '''package com.smartisanos.launcher;
 public class Aa {public static java.util.Map<Long,Object> items=new java.util.LinkedHashMap<Long,Object>();
- public static java.util.Map nc(){return items;}
+ public static int snapshots;
+ public static java.util.Map nc(){snapshots++;return items;}
+ public static Object i(long id){return items.get(id);}
  public static class Item {public String packageName="com.tencent.mm",componentName="Main";
- public int userId=-1,usageCount; private byte[] iconData=new byte[]{1,2,3};
- public byte[] Oe(){return iconData;} }}''',
+ public long id=1; public int userId=-1,usageCount; public byte[] iconData=new byte[]{1,2,3};
+ public byte[] Oe(){return iconData;} public Item clone(){Item c=new Item();c.id=id;c.packageName=packageName;c.userId=userId;c.iconData=iconData;return c;} }}''',
+    "com/smartisanos/launcher/theme/IconRasterDiagnostics.java": '''package com.smartisanos.launcher.theme;
+public class IconRasterDiagnostics {public static int composed;
+ public static android.graphics.Bitmap composeStaticApplicationIconTexture(Object item,android.graphics.Bitmap b){
+ composed++;return new android.graphics.Bitmap(256,256);}}''',
     "SearchIconTest.java": '''import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -100,7 +108,42 @@ public class SearchIconTest {
   release.countDown();waitFor(done);
   check(SearchIconBackend.getEncoded(main)!=null,"default user -1 was not normalized to primary user");
   check(SearchIconBackend.getDecoded(main)!=null,"primary icon not decoded after hydration");
-  System.out.println("PASS: clone-only invalidation, full-package invalidation, default-user identity, coalesced hydration callbacks");
+  SearchIconBackend.invalidateAll("eviction fixture");
+  com.smartisanos.launcher.Aa.items.clear();
+  List<SearchEntry> entries=new ArrayList<>();
+  for(int i=0;i<48;i++){
+   String pkg="example.app"+i;
+   SearchEntry e=new SearchEntry(i==0?"000 Share":"zzz"+i,"",pkg,"Main",0,0,null,pkg+"/Main@0");
+   entries.add(e);com.smartisanos.launcher.Aa.Item item=new com.smartisanos.launcher.Aa.Item();
+   item.id=i+1;item.packageName=pkg;item.iconData=new byte[65536];
+   com.smartisanos.launcher.Aa.items.put(item.id,item);
+  }
+  CountDownLatch hydrated=new CountDownLatch(1);
+  SearchIconBackend.scheduleHydration(context,new SearchSnapshot(entries,8L),g->hydrated.countDown());waitFor(hydrated);
+  SearchEntry share=entries.get(0),evicted=entries.get(6);
+  check(SearchIconBackend.getEncoded(share)==null,"fixture must exceed bounded LRU");
+  check(SearchIconBackend.getDecoded(share)!=null,"Top5 lost icon after encoded eviction");
+  check(SearchIconBackend.getEncoded(evicted)==null&&SearchIconBackend.getDecoded(evicted)==null,"visible miss fixture");
+  int scans=com.smartisanos.launcher.Aa.snapshots;
+  CountDownLatch refilled=new CountDownLatch(1);
+  check(SearchIconBackend.requestDecoded(context,evicted,(k,g,b)->{check(b!=null,"visible LRU miss stayed blank");refilled.countDown();})!=null,"miss request dropped");waitFor(refilled);
+  check(com.smartisanos.launcher.Aa.snapshots==scans,"visible miss scanned full model");
+  SearchIconBackend.invalidateAll("deferred PNG fixture");
+  com.smartisanos.launcher.Aa.Item missing=new com.smartisanos.launcher.Aa.Item();missing.iconData=null;
+  com.smartisanos.launcher.Aa.items.clear();com.smartisanos.launcher.Aa.items.put(1L,missing);
+  CountDownLatch composed=new CountDownLatch(1);
+  SearchIconBackend.scheduleHydration(context,new SearchSnapshot(Arrays.asList(main),9L),g->composed.countDown());waitFor(composed);
+  check(SearchIconBackend.getDecoded(main)!=null,"missing legacy PNG did not use final composer");
+  check(com.smartisanos.launcher.theme.IconRasterDiagnostics.composed==1,"composer fallback missing or duplicated");
+  SearchIconBackend.invalidateAll("cancel fixture");
+  CountDownLatch blocked=new CountDownLatch(1),unblock=new CountDownLatch(1);
+  worker.execute(()->{blocked.countDown();try{unblock.await();}catch(Exception e){throw new RuntimeException(e);}});waitFor(blocked);
+  java.util.concurrent.atomic.AtomicInteger stale=new java.util.concurrent.atomic.AtomicInteger();
+  SearchIconBackend.IconRequest cancelled=SearchIconBackend.requestDecoded(context,main,(k,g,b)->stale.incrementAndGet());
+  cancelled.cancel();SearchIconBackend.invalidatePackage(main.packageName,0);
+  unblock.countDown();worker.submit(()->{}).get(5,TimeUnit.SECONDS);
+  check(stale.get()==0&&SearchIconBackend.getDecoded(main)==null,"invalidated request wrote stale icon");
+  System.out.println("PASS: profile invalidation, default-user identity, hydration coalescing, Top5 LRU recovery, visible refill without full scan, deferred PNG final composition, cancelled/stale request rejection");
  }
 }''',
 })
@@ -121,7 +164,7 @@ def main():
             shutil.copyfile(source / name, work / name)
         subprocess.run([str(args.jdk / "bin/javac.exe"), "-d", str(work / "classes"),
                         *map(str, work.rglob("*.java"))], check=True)
-        subprocess.run([str(args.jdk / "bin/java.exe"), "-cp", str(work / "classes"),
+        subprocess.run([str(args.jdk / "bin/java.exe"), "-Xmx64m", "-cp", str(work / "classes"),
                         "SearchIconTest"], check=True)
 
 

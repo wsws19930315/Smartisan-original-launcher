@@ -7,6 +7,10 @@
 .field private static log:Lcom/smartisanos/launcher/va;
 
 
+# instance fields
+.field private mHomeEntryRedirected:Z
+
+
 # direct methods
 .method static constructor <clinit>()V
     .locals 1
@@ -142,12 +146,6 @@
 .method protected onCreate(Landroid/os/Bundle;)V
     .locals 3
 
-    const-string v0, "LAUNCHER_ACTIVITY_CREATE_BEGIN"
-
-    invoke-static {v0}, Lcom/smartisanos/launcher/diagnostics/StartupCompatibilityLogger;->mark(Ljava/lang/String;)V
-
-    invoke-static {p0}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->begin(Landroid/app/Activity;)V
-
     .line 1
     sget-object v0, Lcom/smartisanos/launcher/Launcher;->log:Lcom/smartisanos/launcher/va;
 
@@ -173,6 +171,25 @@
 
     .line 2
     invoke-super {p0, p1}, Landroid/app/Activity;->onCreate(Landroid/os/Bundle;)V
+
+    invoke-static {p0}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->redirectLauncherAlias(Landroid/app/Activity;)Z
+
+    move-result v0
+
+    if-eqz v0, :home_entry_ready
+
+    iput-boolean v0, p0, Lcom/smartisanos/launcher/Launcher;->mHomeEntryRedirected:Z
+
+    return-void
+
+    :home_entry_ready
+    const-string v0, "LAUNCHER_ACTIVITY_CREATE_BEGIN"
+
+    invoke-static {v0}, Lcom/smartisanos/launcher/diagnostics/StartupCompatibilityLogger;->mark(Ljava/lang/String;)V
+
+    invoke-static {p0}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->begin(Landroid/app/Activity;)V
+
+    invoke-static {p0}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onLauncherCreated(Landroid/app/Activity;)V
 
     invoke-static {p0}, Lcom/smartisanos/launcher/reload/LauncherColdReloadCoordinator;->captureLauncherReloadIntent(Landroid/app/Activity;)V
 
@@ -217,6 +234,15 @@
 .method public onDestroy()V
     .locals 2
 
+    iget-boolean v0, p0, Lcom/smartisanos/launcher/Launcher;->mHomeEntryRedirected:Z
+
+    if-eqz v0, :destroy_original_launcher
+
+    invoke-super {p0}, Landroid/app/Activity;->onDestroy()V
+
+    return-void
+
+    :destroy_original_launcher
     invoke-static {p0}, Lcom/smartisanos/launcher/compat/StatusBarHeightCompat;->unbindWindow(Landroid/app/Activity;)V
 
     invoke-static {p0}, Lcom/smartisanos/launcher/theme/LauncherSettingsOverlayHost;->onDestroyed(Landroid/app/Activity;)V
@@ -225,6 +251,8 @@
 
     .line 1
     invoke-super {p0}, Landroid/app/Activity;->onDestroy()V
+
+    invoke-static {p0}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onLauncherDestroyed(Landroid/app/Activity;)V
 
     .line 2
     sget-object v0, Lcom/smartisanos/launcher/Launcher;->log:Lcom/smartisanos/launcher/va;
@@ -250,6 +278,8 @@
     invoke-super {p0, p1}, Landroid/app/Activity;->onNewIntent(Landroid/content/Intent;)V
 
     invoke-virtual {p0, p1}, Landroid/app/Activity;->setIntent(Landroid/content/Intent;)V
+
+    invoke-static {p0, p1}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onHomeIntent(Landroid/app/Activity;Landroid/content/Intent;)V
 
     invoke-static {p0, p1}, Lcom/smartisanos/launcher/reload/LauncherColdReloadCoordinator;->captureLauncherReloadIntent(Landroid/app/Activity;Landroid/content/Intent;)V
 
@@ -339,6 +369,8 @@
     .line 1
     invoke-super {p0}, Landroid/app/Activity;->onPause()V
 
+    invoke-static {p0}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onLauncherPaused(Landroid/app/Activity;)V
+
     invoke-static {p0}, Lcom/smartisanos/launcher/theme/LauncherBelowKeyguardCompat;->onLauncherPaused(Landroid/app/Activity;)V
 
     .line 2
@@ -357,12 +389,16 @@
     .line 1
     invoke-super {p0}, Landroid/app/Activity;->onResume()V
 
+    invoke-static {p0}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onLauncherResuming(Landroid/app/Activity;)V
+
     .line 2
     invoke-static {}, Lcom/smartisanos/launcher/J;->getInstance()Lcom/smartisanos/launcher/J;
 
     move-result-object v0
 
     invoke-virtual {v0}, Lcom/smartisanos/launcher/J;->onResume()V
+
+    invoke-static {p0}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onLauncherResumed(Landroid/app/Activity;)V
 
     invoke-static {}, Lcom/smartisanos/launcher/compat/UninstallCompat;->onLauncherResumed()V
 
@@ -463,6 +499,8 @@
     .line 1
     invoke-super {p0}, Landroid/app/Activity;->onStop()V
 
+    invoke-static {p0}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onLauncherStopped(Landroid/app/Activity;)V
+
     invoke-static {p0}, Lcom/smartisanos/launcher/theme/LauncherSettingsOverlayHost;->onLauncherStopped(Landroid/app/Activity;)V
 
     invoke-static {p0}, Lcom/smartisanos/launcher/theme/LauncherBelowKeyguardCompat;->onLauncherStopped(Landroid/app/Activity;)V
@@ -477,6 +515,8 @@
 
     .line 1
     invoke-super {p0, p1}, Landroid/app/Activity;->onWindowFocusChanged(Z)V
+
+    invoke-static {p0, p1}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onLauncherFocusChanged(Landroid/app/Activity;Z)V
 
     invoke-static {p0, p1}, Lcom/smartisanos/launcher/theme/LauncherBelowKeyguardCompat;->onWindowFocusChanged(Landroid/app/Activity;Z)V
 

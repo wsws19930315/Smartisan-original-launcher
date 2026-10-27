@@ -11,6 +11,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 
 import com.smartisanos.launcher.profile.DoppelgangerCompat;
+import com.smartisanos.launcher.diagnostics.StartupPageSceneDiagnostics;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -26,6 +27,145 @@ public final class IconRasterDiagnostics {
     private static final int DIAGNOSTIC_ALPHA_CUTOFF = 40;
     private static final String SOURCE_CANVAS_VERSION = "source-canvas:v13-default-circle-sync-pref";
     private static final String RASTER_CACHE_VERSION = "raster:v30-consistent-source-classification";
+    private static final Map<String, Object> PENDING_SOURCE_WRITES =
+            new java.util.LinkedHashMap<String, Object>();
+    private static boolean sDesktopPageReady;
+    private static boolean sSourceWriteScheduled;
+
+    /** Color metadata is required by sorting; obtain its bitmap without forcing a PNG cache write. */
+    public static Bitmap prepareDeferredColorSource(Object item) {
+        String key = itemField(item, "id") + ':' + itemField(item, "userId")
+                + ':' + itemField(item, "packageName") + ':' + itemField(item, "componentName");
+        synchronized (PENDING_SOURCE_WRITES) {
+            if (sDesktopPageReady || !PENDING_SOURCE_WRITES.containsKey(key)) return null;
+        }
+        return prepareStaticSource(item, null);
+    }
+
+    /** Missing DEFAULT source caches must not hold DatabaseHandler's startup invokeAll barrier. */
+    public static boolean deferStartupSourceWrite(Object item, Drawable drawable) {
+        if (drawable == null || !shouldUseHighResolutionDesktopRaster(item)
+                || isDesktopSettingsShortcut(item)) return false;
+        synchronized (PENDING_SOURCE_WRITES) {
+            if (sDesktopPageReady || PENDING_SOURCE_WRITES.size() >= 512) return false;
+            if (!"DEFAULT".equals(MaintainedLauncherSettingsHost.desktopIconSourceType(item))) return false;
+            String key = itemField(item, "id") + ':' + itemField(item, "userId")
+                    + ':' + itemField(item, "packageName") + ':' + itemField(item, "componentName");
+            PENDING_SOURCE_WRITES.put(key, item);
+            return true;
+        }
+    }
+
+    /** A resolved static source can be shown before encoding its legacy DB cache. */
+    public static Bitmap prepareUncachedStaticSource(Object item) {
+        return prepareUncachedStaticSource(item, 0, false);
+    }
+
+    /** The same bounded persistence admission, with a call-local final composition. */
+    public static Bitmap composeUncachedStaticApplicationIconTexture(Object item, int pageMode) {
+        return prepareUncachedStaticSource(item, pageMode, true);
+    }
+
+    private static Bitmap prepareUncachedStaticSource(Object item, int pageMode, boolean compose) {
+        if (!shouldUseHighResolutionDesktopRaster(item) || isDesktopSettingsShortcut(item)) return null;
+        try {
+            Object raw = item.getClass().getField("iconRawData").get(item);
+            if (raw instanceof byte[] && ((byte[]) raw).length > 0) return null;
+            final String key = itemField(item, "id") + ':' + itemField(item, "userId")
+                    + ':' + itemField(item, "packageName") + ':' + itemField(item, "componentName");
+            StaticSource resolved;
+            Bitmap source;
+            boolean borrowed = false;
+            synchronized (PENDING_SOURCE_WRITES) {
+                if (PENDING_SOURCE_WRITES.size() >= 512) return null;
+                resolved = resolveStaticSource(item, null);
+                // Compatibility fallbacks must retain the original recovery/recheck.
+                if (compose && (resolved.drawable == null || resolved.legacyDefaultBitmap
+                        || "APK_DEFAULT".equals(resolved.identity))) return null;
+                source = compose ? borrowedCompositionSource(item, resolved) : null;
+                borrowed = source != null;
+                if (!borrowed) source = prepareResolvedStaticSource(item, null, resolved);
+                if (source == null) return null;
+                PENDING_SOURCE_WRITES.put(key, item);
+                if (sDesktopPageReady) scheduleSourceWrites();
+            }
+            // Do not hold the persistence lock while classifying or composing.
+            return compose ? composePreparedStaticSource(item, source, pageMode, resolved, borrowed) : source;
+        } catch (ReflectiveOperationException error) {
+            Log.w(TAG, "ICON_SOURCE_DEFER_UNAVAILABLE", error);
+            return null;
+        }
+    }
+
+    /** Called at the existing model/page-ready boundary, never from a timer. */
+    public static void onDesktopPageReady() {
+        synchronized (PENDING_SOURCE_WRITES) {
+            sDesktopPageReady = true;
+            Log.i(TAG, "ICON_SOURCE_PERSIST_RELEASE count=" + PENDING_SOURCE_WRITES.size());
+            scheduleSourceWrites();
+        }
+    }
+
+    // Caller holds PENDING_SOURCE_WRITES. One bounded IO admission covers the batch;
+    // rejected work stays pending and can be offered again at the next real page/source event.
+    private static void scheduleSourceWrites() {
+        if (sSourceWriteScheduled || PENDING_SOURCE_WRITES.isEmpty()) return;
+        android.content.Context context = MaintainedLauncherSettingsHost.currentApplicationContext();
+        if (context == null) return;
+        sSourceWriteScheduled = true;
+        boolean accepted = com.smartisanos.home.settings.icons.IconPreviewRepository.get(context)
+                .schedulePersistence(new Runnable() { public void run() {
+            final Map<String, Object> batch;
+            synchronized (PENDING_SOURCE_WRITES) {
+                batch = new java.util.LinkedHashMap<String, Object>(PENDING_SOURCE_WRITES);
+            }
+            try {
+                for (Map.Entry<String, Object> entry : batch.entrySet()) {
+                    persistSource(entry.getKey(), entry.getValue());
+                }
+            } finally {
+                synchronized (PENDING_SOURCE_WRITES) {
+                    sSourceWriteScheduled = false;
+                    // Entries added during the batch share this same bounded owner.
+                    if (!PENDING_SOURCE_WRITES.isEmpty()) scheduleSourceWrites();
+                }
+            }
+        }});
+        if (!accepted) {
+            sSourceWriteScheduled = false;
+            Log.w(TAG, "ICON_SOURCE_PERSIST_DEFERRED reason=io_queue_full");
+        }
+    }
+
+    private static void persistSource(final String key, final Object item) {
+                    try {
+                        // Reuse the original persistence owner, but reject deleted or replaced items.
+                        long id = Long.parseLong(itemField(item, "id"));
+                        Object current = Class.forName("com.smartisanos.launcher.Aa")
+                                .getMethod("i", long.class).invoke(null, id);
+                        if (current == null || !itemField(item, "componentName").equals(
+                                itemField(current, "componentName"))
+                                || !itemField(item, "packageName").equals(itemField(current, "packageName"))
+                                || !itemField(item, "userId").equals(itemField(current, "userId"))) return;
+                        Class<?> itemClass = Class.forName("com.smartisanos.launcher.data.ItemInfo");
+                        Object bytes = Class.forName("com.smartisanos.launcher.e.s")
+                                .getMethod("a", itemClass, boolean.class).invoke(null, current, true);
+                        if (bytes instanceof byte[] && ((byte[]) bytes).length > 0) {
+                            item.getClass().getField("iconRawData").set(item, bytes);
+                        } else {
+                            Log.w(TAG, "ICON_SOURCE_PERSIST_MISSING id=" + id);
+                            return;
+                        }
+                        Log.i(TAG, "ICON_SOURCE_CACHE_READY id=" + id
+                                + " thread=" + Thread.currentThread().getName());
+                    } catch (Exception error) {
+                        Log.w(TAG, "ICON_SOURCE_PERSIST_FAILED key=" + key, error);
+                    } finally {
+                        synchronized (PENDING_SOURCE_WRITES) {
+                            if (PENDING_SOURCE_WRITES.get(key) == item) PENDING_SOURCE_WRITES.remove(key);
+                        }
+                    }
+    }
 
     /**
      * The original theme transition evicts target textures while the outgoing
@@ -218,6 +358,7 @@ public final class IconRasterDiagnostics {
     /** Decodes the persisted source bytes without Aa.h()'s layout-size resample. */
     public static Bitmap iconRawSource(Object itemInfo) {
         if (itemInfo == null) return null;
+        long began = StartupPageSceneDiagnostics.detailBegin();
         try {
             Object value = itemInfo.getClass().getField("iconRawData").get(itemInfo);
             if (!(value instanceof byte[])) return null;
@@ -226,6 +367,8 @@ public final class IconRasterDiagnostics {
                     : BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
         } catch (Throwable ignored) {
             return null;
+        } finally {
+            StartupPageSceneDiagnostics.detailEnd(itemInfo, "RAW_DECODE", began);
         }
     }
 
@@ -238,15 +381,24 @@ public final class IconRasterDiagnostics {
     public static Bitmap prepareStaticSource(Object itemInfo, Bitmap cachedSource) {
         if (isQuickLaunchItem(itemInfo)) return cachedSource;
         StaticSource resolved = resolveStaticSource(itemInfo, cachedSource);
+        return prepareResolvedStaticSource(itemInfo, cachedSource, resolved);
+    }
+
+    private static Bitmap prepareResolvedStaticSource(Object itemInfo, Bitmap cachedSource,
+            StaticSource resolved) {
         if (isDesktopSettingsShortcut(itemInfo) && resolved.drawable == null) return null;
         if (resolved.drawable != null) {
+            long began = StartupPageSceneDiagnostics.detailBegin();
+            try {
             if ("DEFAULT".equals(resolved.type)
-                    && DefaultIconCircleRenderer.isCircleEnabled(
-                    MaintainedLauncherSettingsHost.currentApplicationContext())) {
+                    && MaintainedLauncherSettingsHost.desktopDefaultCircleEnabled(itemInfo, resolved.type)) {
                 return DefaultIconCircleRenderer.render(resolved.drawable,
                         CANONICAL_DEFAULT_SOURCE_SIZE);
             }
             return sourceBitmap(resolved.drawable);
+            } finally {
+                StartupPageSceneDiagnostics.detailEnd(itemInfo, "SOURCE_RASTER", began);
+            }
         }
         return cachedSource;
     }
@@ -416,6 +568,11 @@ public final class IconRasterDiagnostics {
 
     /** Source Resolver: chooses RAW artwork only and never owns geometry. */
     private static StaticSource resolveStaticSource(Object itemInfo, Bitmap legacyBitmap) {
+        return resolveStaticSource(itemInfo, legacyBitmap, false);
+    }
+
+    private static StaticSource resolveStaticSource(Object itemInfo, Bitmap legacyBitmap,
+            boolean reusePreparedDefaultCircle) {
         if (itemInfo == null) {
             return new StaticSource(null, "DEFAULT", "NO_ITEM", legacyBitmap != null);
         }
@@ -424,9 +581,39 @@ public final class IconRasterDiagnostics {
             return new StaticSource(loadCurrentDesktopDrawable(itemInfo),
                     "RESOURCE", "launcher:icon_setting", false);
         }
-        String selectedType = MaintainedLauncherSettingsHost.desktopIconSourceType(itemInfo);
-        String identity = MaintainedLauncherSettingsHost.desktopIconSourceIdentity(itemInfo);
+        MaintainedLauncherSettingsHost.ManagedIconSource snapshot = null;
+        long began;
+        if (!reusePreparedDefaultCircle && shouldUseHighResolutionDesktopRaster(itemInfo)) {
+            began = StartupPageSceneDiagnostics.detailBegin();
+            snapshot = MaintainedLauncherSettingsHost.desktopSourceForComposition(itemInfo);
+            StartupPageSceneDiagnostics.detailEnd(itemInfo, "SOURCE_SNAPSHOT", began);
+        }
+        String selectedType;
+        String identity;
+        if (snapshot != null) {
+            selectedType = snapshot.desktopType;
+            identity = snapshot.desktopIdentity;
+            if (snapshot.drawable != null) return new StaticSource(snapshot.drawable, selectedType, identity, false);
+        } else {
+            began = StartupPageSceneDiagnostics.detailBegin();
+            selectedType = MaintainedLauncherSettingsHost.desktopIconSourceType(itemInfo);
+            StartupPageSceneDiagnostics.detailEnd(itemInfo, "SOURCE_TYPE", began);
+            began = StartupPageSceneDiagnostics.detailBegin();
+            identity = MaintainedLauncherSettingsHost.desktopIconSourceIdentity(itemInfo, selectedType);
+            StartupPageSceneDiagnostics.detailEnd(itemInfo, "SOURCE_IDENTITY", began);
+        }
+        // The composer already draws this prepared circle Bitmap, discarding any
+        // newly loaded DEFAULT drawable. Keep that same input without loading it twice.
+        if (reusePreparedDefaultCircle && "DEFAULT".equals(selectedType)
+                && legacyBitmap != null && !legacyBitmap.isRecycled()
+                && MaintainedLauncherSettingsHost.desktopDefaultCircleEnabled(itemInfo, selectedType)) {
+            began = StartupPageSceneDiagnostics.detailBegin();
+            StartupPageSceneDiagnostics.detailEnd(itemInfo, "PREPARED_DEFAULT_REUSE", began);
+            return new StaticSource(null, selectedType, identity, false);
+        }
+        began = StartupPageSceneDiagnostics.detailBegin();
         Drawable drawable = loadCurrentDesktopDrawable(itemInfo);
+        StartupPageSceneDiagnostics.detailEnd(itemInfo, "SOURCE_DRAWABLE", began);
         if (drawable != null) {
             return new StaticSource(drawable, selectedType, identity, false);
         }
@@ -526,6 +713,65 @@ public final class IconRasterDiagnostics {
     }
 
     /**
+     * One synchronous source snapshot for preparation, classification and drawing.
+     * No result survives this call. Missing DB caches retain their bounded deferred
+     * persistence path; unavailable formal artwork retains the legacy recovery path.
+     */
+    public static Bitmap composeCurrentStaticApplicationIconTexture(Object itemInfo,
+            Bitmap cachedSource, int pageMode) {
+        if (isQuickLaunchItem(itemInfo) || !shouldUseHighResolutionDesktopRaster(itemInfo)) return null;
+        // A non-empty byte array is not proof that the DB cache decodes correctly.
+        if (cachedSource == null || cachedSource.isRecycled()) return null;
+        StaticSource resolved = resolveStaticSource(itemInfo, null);
+        if (resolved.drawable == null || resolved.legacyDefaultBitmap
+                || "APK_DEFAULT".equals(resolved.identity)) return null;
+        Bitmap borrowed = borrowedCompositionSource(itemInfo, resolved);
+        if (borrowed != null) {
+            return composePreparedStaticSource(itemInfo, borrowed, pageMode, resolved, true);
+        }
+        // With no cached input, a non-null prepared Bitmap is exclusively owned.
+        Bitmap prepared = prepareResolvedStaticSource(itemInfo, null, resolved);
+        if (prepared == null) return null;
+        return composePreparedStaticSource(itemInfo, prepared, pageMode, resolved);
+    }
+
+    /** Borrow only a CPU-readable source already drawn by this call's compositor. */
+    private static Bitmap borrowedCompositionSource(Object itemInfo, StaticSource resolved) {
+        if (resolved.drawable instanceof android.graphics.drawable.BitmapDrawable
+                && !("DEFAULT".equals(resolved.type)
+                && MaintainedLauncherSettingsHost.desktopDefaultCircleEnabled(itemInfo, resolved.type))) {
+            Bitmap borrowed = ((android.graphics.drawable.BitmapDrawable) resolved.drawable).getBitmap();
+            if (borrowed != null && !borrowed.isRecycled()
+                    && borrowed.getConfig() == Bitmap.Config.ARGB_8888) {
+                return borrowed;
+            }
+        }
+        return null;
+    }
+
+    private static Bitmap composePreparedStaticSource(Object itemInfo, Bitmap prepared,
+            int pageMode, StaticSource resolved) {
+        return composePreparedStaticSource(itemInfo, prepared, pageMode, resolved, false);
+    }
+
+    private static Bitmap composePreparedStaticSource(Object itemInfo, Bitmap prepared,
+            int pageMode, StaticSource resolved, boolean borrowed) {
+        Bitmap result = null;
+        try {
+            boolean resized = resizeClassification(null, prepared);
+            StartupPageSceneDiagnostics.shadowCompose(itemInfo);
+            result = composeTexture(prepared, 0, itemInfo, pageMode, resized, resolved);
+            // Geometry fallback returns its input; callers own and release results.
+            if (borrowed && result == prepared) result = prepared.copy(Bitmap.Config.ARGB_8888, false);
+            return result;
+        } finally {
+            // The composer can return its input when geometry is unavailable.
+            // Transfer that result; never recycle a borrowed Drawable's Bitmap.
+            if (!borrowed) recycleIfOwned(prepared, result);
+        }
+    }
+
+    /**
      * Compatibility entry for the old fallback path. It deliberately does not
      * infer scale from alpha bounds.
      */
@@ -543,7 +789,11 @@ public final class IconRasterDiagnostics {
     }
 
     private static NormalIconRasterSpec resolveNormalIconRasterSpec(int pageMode) {
-        IconVisualMetrics metrics = IconVisualMetrics.resolve(pageMode);
+        return resolveNormalIconRasterSpec(IconVisualMetrics.resolve(pageMode));
+    }
+
+    /** Reuse this call's metrics; never retain geometry across a scene or setting change. */
+    private static NormalIconRasterSpec resolveNormalIconRasterSpec(IconVisualMetrics metrics) {
         if (metrics == null) return null;
         return new NormalIconRasterSpec(
                 metrics.logicalArtworkBox, metrics.logicalArtworkBox,
@@ -566,20 +816,23 @@ public final class IconRasterDiagnostics {
 
     private static Bitmap composeTexture(Bitmap source, int actualLogicalTexture,
             Object itemInfo, int pageMode, boolean resized) {
-        StaticSource resolved = resolveStaticSource(itemInfo, source);
+        StaticSource resolved = resolveStaticSource(itemInfo, source, true);
+        return composeTexture(source, actualLogicalTexture, itemInfo, pageMode, resized, resolved);
+    }
+
+    private static Bitmap composeTexture(Bitmap source, int actualLogicalTexture,
+            Object itemInfo, int pageMode, boolean resized, StaticSource resolved) {
         Drawable rawDrawable = resolved.drawable;
         if (isDesktopSettingsShortcut(itemInfo) && rawDrawable == null) return source;
         boolean defaultCircle = "DEFAULT".equals(resolved.type)
-                && DefaultIconCircleRenderer.isCircleEnabled(
-                MaintainedLauncherSettingsHost.currentApplicationContext());
+                && MaintainedLauncherSettingsHost.desktopDefaultCircleEnabled(itemInfo, resolved.type);
         if (defaultCircle && source != null && !source.isRecycled()) rawDrawable = null;
         if ((source == null || source.isRecycled()) && rawDrawable == null) return source;
         int logicalArtwork = layoutSize(pageMode, "icon_size_origin");
         int logicalTexture = layoutSize(pageMode, "icon_size_with_shadow");
-        NormalIconRasterSpec spec = resolveNormalIconRasterSpec(pageMode);
-        if (spec == null) return source;
         IconVisualMetrics visualMetrics = IconVisualMetrics.resolve(pageMode);
-        if (visualMetrics == null) return source;
+        NormalIconRasterSpec spec = resolveNormalIconRasterSpec(visualMetrics);
+        if (spec == null) return source;
         float rasterScale = spec.rasterScale;
         int artwork = spec.artworkWidth;
         int texture = spec.textureWidth;
@@ -641,6 +894,8 @@ public final class IconRasterDiagnostics {
                             drawLeftInArtwork + drawWidth, drawTopInArtwork + drawHeight), paint);
         }
         VisibleBounds visibleAfter = analyzeVisibleBounds(physicalArtwork);
+        Bitmap analyzedArtwork = physicalArtwork;
+        int analyzedGeneration = physicalArtwork.getGenerationId();
         if (isAcceptanceSample(itemInfo)) {
             Log.w(TAG, "SOURCE_CANVAS_FINAL_SCALE package=" + itemField(itemInfo, "packageName")
                     + " sourceScale=" + sourceScale
@@ -651,17 +906,21 @@ public final class IconRasterDiagnostics {
                     + drawWidth + 'x' + drawHeight);
         }
         debugDump(itemInfo, "ARTWORK", physicalArtwork);
-        Bitmap decoratedArtwork = decorateProfileIcon(itemInfo, physicalArtwork);
+        Bitmap decoratedArtwork = decorateProfileIcon(itemInfo, physicalArtwork, resolved.type);
         if (decoratedArtwork != null && decoratedArtwork != physicalArtwork) {
             physicalArtwork.recycle();
             physicalArtwork = decoratedArtwork;
         }
         // The settings Cell retains its existing fixed-resource projection path.
         if (!isDesktopSettingsShortcut(itemInfo)) {
+            long began = StartupPageSceneDiagnostics.detailBegin();
             IconIlluminationCompat.prepare(itemInfo, physicalArtwork);
+            StartupPageSceneDiagnostics.detailEnd(itemInfo, "PROJECTION_PREPARE", began);
         }
+        long shadowBegan = StartupPageSceneDiagnostics.detailBegin();
         Bitmap result = LauncherSettingBridge.composeStaticIconTextureWithOriginalShadow(
                 physicalArtwork, texture, rasterScale);
+        StartupPageSceneDiagnostics.detailEnd(itemInfo, "ORIGINAL_SHADOW", shadowBegan);
         float artworkLeft = (texture - artwork) * 0.5f;
         float artworkTop = (texture - artwork) * 0.25f;
         float drawLeft = artworkLeft + drawLeftInArtwork;
@@ -696,7 +955,8 @@ public final class IconRasterDiagnostics {
                 logicalArtwork, logicalTexture, visualMetrics);
         if (analysisSource != null) {
             reportSourceCanvasOnce(itemInfo, analysisSource, visibleBefore,
-                    physicalArtwork, sourceScale, artwork, texture);
+                    physicalArtwork, analyzedArtwork, analyzedGeneration, visibleAfter,
+                    sourceScale, artwork, texture, defaultCircle);
         }
         Log.i(TAG, "ICON_CONTRACT_PIPELINE source=" + resolved.type
                 + " lifecycle=" + lifecycleToken(itemInfo)
@@ -841,7 +1101,7 @@ public final class IconRasterDiagnostics {
         }
     }
 
-    private static Bitmap decorateProfileIcon(Object itemInfo, Bitmap artwork) {
+    private static Bitmap decorateProfileIcon(Object itemInfo, Bitmap artwork, String sourceType) {
         if (itemInfo == null || artwork == null || artwork.isRecycled()) return artwork;
         try {
             String packageName = itemField(itemInfo, "packageName");
@@ -855,7 +1115,7 @@ public final class IconRasterDiagnostics {
             if (context == null || (!compatIdentity && !profileIdentity)) {
                 Log.i(TAG, "ICON_FINAL_COMPOSED packageName=" + packageName
                         + " componentName=" + componentName + " sourceType="
-                        + MaintainedLauncherSettingsHost.desktopIconSourceType(itemInfo)
+                        + sourceType
                         + " userId=" + userId + " badgeApplied=false"
                         + " compatIdentity=" + compatIdentity
                         + " profileIdentity=" + profileIdentity);
@@ -864,7 +1124,7 @@ public final class IconRasterDiagnostics {
             Bitmap badged = MaintainedLauncherSettingsHost.doppelgangerBitmap(artwork);
             Log.i(TAG, "ICON_FINAL_COMPOSED packageName=" + packageName
                     + " componentName=" + componentName + " sourceType="
-                    + MaintainedLauncherSettingsHost.desktopIconSourceType(itemInfo)
+                    + sourceType
                     + " userId=" + userId + " badgeApplied=" + (badged != artwork)
                     + " compatIdentity=" + compatIdentity
                     + " profileIdentity=" + profileIdentity);
@@ -969,23 +1229,24 @@ public final class IconRasterDiagnostics {
     }
 
     private static void reportSourceCanvasOnce(Object itemInfo, Bitmap source,
-            VisibleBounds before, Bitmap normalizedArtwork, float sourceScale,
-            int artwork, int texture) {
+            VisibleBounds before, Bitmap normalizedArtwork, Bitmap analyzedArtwork,
+            int analyzedGeneration, VisibleBounds analyzedAfter, float sourceScale,
+            int artwork, int texture, boolean defaultCircle) {
         String packageName = itemField(itemInfo, "packageName");
         String component = itemField(itemInfo, "componentName");
         String key = "source-canvas:" + packageName + ':' + component;
         synchronized (REPORTED) {
             if (!REPORTED.add(key)) return;
         }
-        VisibleBounds after = analyzeVisibleBounds(normalizedArtwork);
+        // Reuse only this call's scan of the same, unchanged bitmap. A badge or
+        // later pixel mutation still requires the original post-compose scan.
+        VisibleBounds after = normalizedArtwork == analyzedArtwork
+                && normalizedArtwork.getGenerationId() == analyzedGeneration
+                ? analyzedAfter : analyzeVisibleBounds(normalizedArtwork);
         float beforeX = before == null ? 0f : before.width() / (float) Math.max(1, source.getWidth());
         float beforeY = before == null ? 0f : before.height() / (float) Math.max(1, source.getHeight());
         float finalX = after == null ? 0f : after.width() / (float) Math.max(1, artwork);
         float finalY = after == null ? 0f : after.height() / (float) Math.max(1, artwork);
-        boolean defaultCircle = "DEFAULT".equals(
-                MaintainedLauncherSettingsHost.desktopIconSourceType(itemInfo))
-                && DefaultIconCircleRenderer.isCircleEnabled(
-                MaintainedLauncherSettingsHost.currentApplicationContext());
         Log.w(TAG, "DEFAULT_ICON_COMPOSE package=" + packageName
                 + " logicalArtwork=" + currentLayoutSize("icon_size_origin")
                 + " physicalArtwork=" + artwork
@@ -1035,9 +1296,14 @@ public final class IconRasterDiagnostics {
                 + " stage=iconRawData reason=original_active_layers");
     }
 
+    /** One version owner for callers which already resolved a complete physical key. */
+    public static boolean hasCurrentTextureCacheKey(String key) {
+        return key != null && key.contains("#" + RASTER_CACHE_VERSION + ":");
+    }
+
     /** Keeps the SMEngine in-memory texture cache separate per physical raster. */
     public static String textureCacheKey(Object itemInfo, String baseKey) {
-        if (baseKey == null || baseKey.contains("#" + RASTER_CACHE_VERSION + ":")) return baseKey;
+        if (baseKey == null || hasCurrentTextureCacheKey(baseKey)) return baseKey;
         return textureCacheKey(itemInfo, baseKey, desktopPageMode());
     }
 
@@ -1082,11 +1348,19 @@ public final class IconRasterDiagnostics {
         String packageName = itemField(itemInfo, "packageName");
         String componentName = itemField(itemInfo, "componentName");
         String userId = itemField(itemInfo, "userId");
-        String sourceHash = resolvedSourceHash(itemInfo);
+        MaintainedLauncherSettingsHost.ManagedIconSource keySource =
+                isDesktopSettingsShortcut(itemInfo) || isOriginalActiveIcon(itemInfo) ? null
+                : MaintainedLauncherSettingsHost.desktopSourceForTextureKey(itemInfo);
+        String sourceHash = keySource != null && keySource.desktopHash != null
+                ? keySource.desktopHash
+                : keySource == null ? resolvedSourceHash(itemInfo)
+                : resolvedSourceHash(itemInfo, keySource.drawable, keySource.desktopIdentity);
         String sourceType = isDesktopSettingsShortcut(itemInfo) ? "RESOURCE"
+                : keySource != null && keySource.desktopType != null ? keySource.desktopType
                 : MaintainedLauncherSettingsHost.desktopIconSourceType(itemInfo);
         String sourceIdentity = isDesktopSettingsShortcut(itemInfo) ? "launcher:icon_setting"
-                : MaintainedLauncherSettingsHost.desktopIconSourceIdentity(itemInfo);
+                : keySource != null && keySource.desktopIdentity != null ? keySource.desktopIdentity
+                : MaintainedLauncherSettingsHost.desktopIconSourceIdentity(itemInfo, sourceType);
         String themeMode = String.valueOf(currentConstant("isTransparentTheme", 0));
         int iconPercent = Math.round(logicalArtwork * 100f / Math.max(1, baseIconSize(pageMode)));
         String pipeline = isOriginalActiveIcon(itemInfo) ? "ORIGINAL_ACTIVE_ICON"
@@ -1102,8 +1376,8 @@ public final class IconRasterDiagnostics {
                 + ":sourceCanvasVersion=" + SOURCE_CANVAS_VERSION
                 + ":contentBoxType=" + (resizeClassification(itemInfo) ? "RESIZED" : "NORMAL")
                 + ":defaultShape=" + ("DEFAULT".equals(sourceType)
-                ? DefaultIconCircleRenderer.shapeToken(
-                MaintainedLauncherSettingsHost.currentApplicationContext()) : "not-default")
+                ? (MaintainedLauncherSettingsHost.desktopDefaultCircleEnabled(itemInfo, sourceType)
+                ? DefaultIconCircleRenderer.SHAPE_CIRCLE : DefaultIconCircleRenderer.SHAPE_FOLLOW_APP) : "not-default")
                 + ":defaultShapeVersion=" + DefaultIconCircleRenderer.VERSION
                 + ":fitPolicy=source-full-canvas"
                 + ":alphaGeometryUsed=false"
@@ -1121,7 +1395,10 @@ public final class IconRasterDiagnostics {
 
     private static String resolvedSourceHash(Object itemInfo) {
         if (isQuickLaunchItem(itemInfo)) return itemRawHash(itemInfo);
-        Drawable drawable = loadCurrentDesktopDrawable(itemInfo);
+        return resolvedSourceHash(itemInfo, loadCurrentDesktopDrawable(itemInfo), null);
+    }
+
+    private static String resolvedSourceHash(Object itemInfo, Drawable drawable, String sourceIdentity) {
         Bitmap bitmap = null;
         boolean owned = false;
         try {
@@ -1130,7 +1407,8 @@ public final class IconRasterDiagnostics {
             } else if (drawable != null) {
                 return "drawable:" + drawable.getClass().getName() + ':'
                         + drawable.getIntrinsicWidth() + 'x' + drawable.getIntrinsicHeight()
-                        + ':' + MaintainedLauncherSettingsHost.desktopIconSourceIdentity(itemInfo);
+                        + ':' + (sourceIdentity != null ? sourceIdentity
+                        : MaintainedLauncherSettingsHost.desktopIconSourceIdentity(itemInfo));
             }
             if (bitmap == null || bitmap.isRecycled()) return itemRawHash(itemInfo);
             int width = bitmap.getWidth();

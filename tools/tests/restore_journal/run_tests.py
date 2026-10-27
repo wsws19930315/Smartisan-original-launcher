@@ -11,6 +11,9 @@ import tempfile
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 PACKAGE = 'com/smartisanos/launcher/backup/'
 SOURCES = {
+'android/system/Os.java': '''package android.system;import java.nio.file.*;public class Os{
+public static void rename(String source,String target)throws java.io.IOException{
+Files.move(Paths.get(source),Paths.get(target),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);}}''',
 'android/util/Log.java': '''package android.util;public class Log {
 public static int i(String t,String s){return 0;}public static int w(String t,String s,Throwable e){return 0;}
 public static int e(String t,String s){return 0;}public static int e(String t,String s,Throwable e){return 0;}}''',
@@ -85,13 +88,15 @@ public static void exportStableSnapshot(Context c){Effects.events.add("VERIFY");
 PACKAGE+'PreferenceBackupCodec.java': '''package com.smartisanos.launcher.backup;import android.content.*;import org.json.*;public class PreferenceBackupCodec{
 public static JSONObject encode(Context c){return new JSONObject();}public static void restore(Context c,JSONObject j){Effects.events.add("PREF");}}''',
 PACKAGE+'ThemeBackupCodec.java': '''package com.smartisanos.launcher.backup;import android.content.*;import org.json.*;public class ThemeBackupCodec{
-public static JSONObject encode(Context c){return new JSONObject();}public static boolean isThemePackageAvailable(Context c,String p){return true;}}''',
+public static JSONObject encode(Context c,java.io.File f,DesktopBackupController.CancellationToken cancel){return new JSONObject();}
+public static void restoreWallpaper(Context c,JSONObject j,java.io.File f){}
+public static boolean isThemePackageAvailable(Context c,String p){return true;}}''',
 PACKAGE+'IconBackupCodec.java': '''package com.smartisanos.launcher.backup;import android.content.*;import java.io.*;import org.json.*;public class IconBackupCodec{
 public static JSONObject encode(Context c,File f){return new JSONObject();}public static void restore(Context c,JSONObject j,File f){Effects.events.add("ICONS");}}''',
 PACKAGE+'ShortcutIconBackupCodec.java': '''package com.smartisanos.launcher.backup;import android.content.*;import java.io.*;import org.json.*;public class ShortcutIconBackupCodec{
 public static JSONObject encode(Context c,JSONObject l,File f){return new JSONObject();}}''',
 PACKAGE+'RestoreIconSourceReconciler.java': '''package com.smartisanos.launcher.backup;import android.content.*;import java.io.*;import org.json.*;public class RestoreIconSourceReconciler{
-public static JSONObject encodePortableSources(Context c,File f){return new JSONObject();}
+public static JSONObject encodePortableSources(Context c,File f,JSONObject layout,JSONObject icons){return new JSONObject();}
 public static void restorePortableSources(Context c,JSONObject j,File f){Effects.events.add("PORTABLE");}
 public static void setPendingReconcile(Context c,String t){Effects.events.add("RECONCILE");}public static void primeIconSourceAfterRestore(Context c){Effects.events.add("PRIME");}}''',
 'com/smartisanos/launcher/data/C.java': 'package com.smartisanos.launcher.data;public class C{public static Object getInstance(){return new Object();}}',
@@ -133,7 +138,7 @@ c=fresh();j=new RestoreOperationJournal(c);e=entry(c);j.write(e,WAITING_TRANSITI
 for(String target:new String[]{"CLEANING","IDLE"}){c=fresh();j=new RestoreOperationJournal(c);e=entry(c);e.undo=true;j.write(e,COMMITTED,null);AtomicFile.failState=target;DesktopRestoreController.onLauncherFirstFrame(c,e.operationToken,"BACKUP_RESTORE_ROLLBACK");awaitCleanup();filesRemain(e);check(!Effects.events.contains("TOAST:UNDO_COMPLETE"),"no premature undo success");AtomicFile.failState="";check(j.read().state!=IDLE,"cleanup checkpoint retained");}
 c=fresh();j=new RestoreOperationJournal(c);e=entry(c);j.write(e,COMMITTED,null);DesktopRestoreController.onLauncherFirstFrame(c,e.operationToken,"BACKUP_RESTORE");awaitCleanup();check(j.read().state==IDLE,"successful cleanup idle");check(Effects.events.contains("TOAST:RESTORE_COMPLETE"),"successful toast");check(new File(e.rollbackPath).isFile(),"undo archive preserved");
 c=fresh();e=entry(c);write(journal(c),"corrupt");RestoreRecoveryGuard.beforeLauncherDatabaseInit(c);filesRemain(e);check(Effects.events.isEmpty(),"corrupt recovery no data writes");check(c.prefs.getString("pending_restore_toast","").equals("RESTORE_JOURNAL_CORRUPT"),"corrupt recovery notice");
-for(RestoreOperationJournal.State phase:new RestoreOperationJournal.State[]{VALIDATING,COMMITTED,CLEANING,ROLLED_BACK}){c=fresh();j=new RestoreOperationJournal(c);e=entry(c);j.write(e,phase,null);AtomicFile.failState="IDLE";RestoreRecoveryGuard.beforeLauncherDatabaseInit(c);filesRemain(e);check(Effects.events.isEmpty(),"guard failed reset no writes");AtomicFile.failState="";check(j.read().state==phase,"guard retained phase");check(c.prefs.getString("pending_restore_toast","").equals("RESTORE_JOURNAL_WRITE_FAILED"),"guard reset failure notice");}
+for(RestoreOperationJournal.State phase:new RestoreOperationJournal.State[]{VALIDATING,COMMITTED,CLEANING,ROLLED_BACK}){c=fresh();j=new RestoreOperationJournal(c);e=entry(c);j.write(e,phase,null);AtomicFile.failState="IDLE";RestoreRecoveryGuard.beforeLauncherDatabaseInit(c);filesRemain(e);check(Effects.events.isEmpty(),"guard failed reset no writes");AtomicFile.failState="";check(j.read().state==((phase==COMMITTED||phase==ROLLED_BACK)?CLEANING:phase),"guard retains last durable cleanup phase");check(c.prefs.getString("pending_restore_toast","").equals("RESTORE_JOURNAL_WRITE_FAILED"),"guard reset failure notice");}
 c=fresh();j=new RestoreOperationJournal(c);e=entry(c);j.write(e,APPLYING_PREFERENCES,null);AtomicFile.failState="ROLLING_BACK";RestoreRecoveryGuard.beforeLauncherDatabaseInit(c);filesRemain(e);check(Effects.events.isEmpty(),"guard no rollback without checkpoint");AtomicFile.failState="";RestoreRecoveryGuard.beforeLauncherDatabaseInit(c);check(j.read().state==IDLE,"guard recovers when persistence available");check(Effects.lastArchive.equals(new File(e.rollbackPath)),"guard rollback source");
 c=fresh();j=new RestoreOperationJournal(c);e=entry(c);j.write(e,WAITING_TRANSITION,null);Effects.failImporter=true;AtomicFile.failState="FAILED_ROLLBACK_PENDING";check(!DesktopRestoreController.applyPreparedAfterOldProcessExit(c,e.operationToken,"BACKUP_RESTORE"),"rollback checkpoint failure stops");check(Effects.events.equals(Collections.singletonList("DB")),"no unjournaled rollback");filesRemain(e);
 for(String target:new String[]{"VALIDATING","READY"}){c=fresh();AtomicFile.failState=target;Listener l=new Listener();DesktopRestoreController.validateSelectedFile(c,new android.net.Uri(),l);l.await();check(!l.preview,"no preview "+target);check(l.result.errorCode.equals("RESTORE_JOURNAL_WRITE_FAILED"),"prepare error");check(!BackupOperationLock.isBusy(),"prepare lock released");}

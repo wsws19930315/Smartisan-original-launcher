@@ -431,6 +431,9 @@
     .line 76
     invoke-virtual {p1, p2}, Landroid/graphics/Canvas;->setBitmap(Landroid/graphics/Bitmap;)V
 
+    # The returned outline is separate; this padded input is call-local.
+    invoke-virtual {v1}, Landroid/graphics/Bitmap;->recycle()V
+
     return-object p0
 .end method
 
@@ -604,14 +607,11 @@
 
     move-result-object v11
 
-    new-array v12, v3, [I
+    # Both color passes read the same unmodified blurred alpha and offsets.
+    # Keep their independent draw calls, but own and recycle one mask only.
+    move-object v12, v10
 
-    .line 5
-    iget-object v4, v0, Lcom/smartisanos/launcher/data/L;->Yq:Landroid/graphics/Paint;
-
-    invoke-virtual {v9, v4, v12}, Landroid/graphics/Bitmap;->extractAlpha(Landroid/graphics/Paint;[I)Landroid/graphics/Bitmap;
-
-    move-result-object v13
+    move-object v13, v11
 
     .line 6
     invoke-virtual {v7, v9}, Landroid/graphics/Canvas;->setBitmap(Landroid/graphics/Bitmap;)V
@@ -812,8 +812,6 @@
     invoke-virtual {v7, v0}, Landroid/graphics/Canvas;->setBitmap(Landroid/graphics/Bitmap;)V
 
     .line 24
-    invoke-virtual {v13}, Landroid/graphics/Bitmap;->recycle()V
-
     .line 25
     invoke-virtual {v11}, Landroid/graphics/Bitmap;->recycle()V
 

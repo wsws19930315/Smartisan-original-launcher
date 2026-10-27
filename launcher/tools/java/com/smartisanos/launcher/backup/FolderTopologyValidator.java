@@ -74,7 +74,7 @@ public final class FolderTopologyValidator {
 
         // Pass 1: collect all item IDs and folder IDs
         Set<Long> allIds = new HashSet<Long>();
-        Map<Long, String> folderTitles = new HashMap<Long, String>();  // folderId -> title
+        Map<Long, Long> folderParents = new HashMap<Long, Long>();
 
         for (int i = 0; i < items.length(); i++) {
             JSONObject item = items.optJSONObject(i);
@@ -83,9 +83,13 @@ public final class FolderTopologyValidator {
             if (id <= 0L) return fail(0, 0, "Item index=" + i + " has invalid _id=" + id);
             if (!allIds.add(Long.valueOf(id))) return fail(0, 0, "Duplicate _id=" + id);
             if (item.optInt("itemType", -1) == 2) {
-                folderTitles.put(Long.valueOf(id), item.optString("title", ""));
+                folderParents.put(Long.valueOf(id), Long.valueOf(item.optLong("folderIndex", -1L)));
             }
         }
+
+        Long cycle = findFolderCycle(folderParents);
+        if (cycle != null) return fail(folderParents.size(), 0,
+                "Folder cycle at _id=" + cycle);
 
         // Pass 2: validate children and count
         int childCount = 0;
@@ -94,16 +98,16 @@ public final class FolderTopologyValidator {
             if (item == null) continue;
             long folderIndex = item.optLong("folderIndex", -1L);
             if (folderIndex <= 0L) continue; // root item or FolderInfo itself
-            if (!folderTitles.containsKey(Long.valueOf(folderIndex))) {
-                return fail(folderTitles.size(), childCount,
+            if (!folderParents.containsKey(Long.valueOf(folderIndex))) {
+                return fail(folderParents.size(), childCount,
                         "Item _id=" + item.optLong("_id", -1) + " pkg=" + item.optString("packageName", "")
                                 + " references non-existent folder _id=" + folderIndex);
             }
             childCount++;
         }
 
-        Log.i(TAG, "LAYOUT_TOPOLOGY_OK folderCount=" + folderTitles.size() + " childCount=" + childCount);
-        return new ValidationResult(true, folderTitles.size(), childCount, "");
+        Log.i(TAG, "LAYOUT_TOPOLOGY_OK folderCount=" + folderParents.size() + " childCount=" + childCount);
+        return new ValidationResult(true, folderParents.size(), childCount, "");
     }
 
     // -------------------------------------------------------------------------
@@ -113,11 +117,20 @@ public final class FolderTopologyValidator {
     public static DbValidationResult validateDatabase(SQLiteDatabase db) {
         // Collect all folder IDs
         Set<Long> folderIds = new HashSet<Long>();
+        Map<Long, Long> folderParents = new HashMap<Long, Long>();
         Cursor folderCursor = db.rawQuery(
-                "SELECT _id FROM table_iteminfos WHERE itemType=2", null);
+                "SELECT _id, folderIndex FROM table_iteminfos WHERE itemType=2", null);
         try {
-            while (folderCursor.moveToNext()) folderIds.add(Long.valueOf(folderCursor.getLong(0)));
+            while (folderCursor.moveToNext()) {
+                Long id = Long.valueOf(folderCursor.getLong(0));
+                folderIds.add(id);
+                folderParents.put(id, Long.valueOf(folderCursor.getLong(1)));
+            }
         } finally { folderCursor.close(); }
+
+        Long cycle = findFolderCycle(folderParents);
+        if (cycle != null) return new DbValidationResult(false, folderIds.size(), 0, 0,
+                "Folder cycle at _id=" + cycle);
 
         // Count orphan children (folderIndex > 0, no matching folder _id)
         int orphanCount = 0;
@@ -204,6 +217,22 @@ public final class FolderTopologyValidator {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    // Each folder has at most one parent. Iterative walks avoid stack overflow
+    // and completed paths are skipped, so shared chains are visited only once.
+    private static Long findFolderCycle(Map<Long, Long> parents) {
+        Set<Long> completed = new HashSet<Long>();
+        for (Long start : parents.keySet()) {
+            Set<Long> path = new HashSet<Long>();
+            Long current = start;
+            while (current != null && parents.containsKey(current) && !completed.contains(current)) {
+                if (!path.add(current)) return current;
+                current = parents.get(current);
+            }
+            completed.addAll(path);
+        }
+        return null;
+    }
 
     private static Map<Long, List<String>> buildFolderChildMap(JSONObject layout) throws Exception {
         JSONArray items = layout.getJSONArray("items");

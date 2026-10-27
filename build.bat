@@ -178,6 +178,11 @@ if not defined ANDROID_SDK (
 
 echo [env] ANDROID_SDK=%ANDROID_SDK%
 
+python -B "%ROOT%tools\patch_native_batch_capacity.py" --check
+if errorlevel 1 exit /b 1
+python -B "%ROOT%tools\build_native_batch_compat.py" --sdk "%ANDROID_SDK%"
+if errorlevel 1 exit /b 1
+
 rem ============================================================
 rem 4. Detect latest Build Tools
 rem ============================================================
@@ -310,6 +315,12 @@ if exist "%ROOT%launcher\tools\maintained_settings_res\res" (
   rem Bundle complete normal-mode weather/calendar icons into the maintained
   rem resource APK so dynamic switching never waits for the network.
   xcopy /e /i /q /y "%ROOT%launcher\tools\maintained_settings_res\res\*" "%ROOT%launcher\scratch\maintained_settings_res\res\" >nul
+  rem Flat xhdpi copies stretch the border on low-density devices; keep the original 9-patches.
+  for %%B in (sub_item_back_ground_single sub_item_back_ground_single_disabled sub_item_back_ground_single_highlight) do (
+    if exist "%ROOT%launcher\scratch\maintained_settings_res\res\drawable-xxhdpi-v4\%%B.9.png" (
+      if exist "%ROOT%launcher\scratch\maintained_settings_res\res\drawable-xhdpi-v4\%%B.png" del /q "%ROOT%launcher\scratch\maintained_settings_res\res\drawable-xhdpi-v4\%%B.png"
+    )
+  )
   copy /y "%ROOT%icons\drawable\com.smartisanos.weather.png" "%ROOT%launcher\scratch\maintained_settings_res\res\drawable\static_icon_weather.png" >nul
   copy /y "%ROOT%icons\drawable\com.android.calendar.png" "%ROOT%launcher\scratch\maintained_settings_res\res\drawable\static_icon_calendar.png" >nul
 

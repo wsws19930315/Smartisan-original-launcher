@@ -976,6 +976,47 @@
     return-void
 .end method
 
+.method private fitBackgroundToViewport()V
+    .locals 6
+
+    sget-boolean v0, Lcom/smartisanos/launcher/data/Constants;->ENABLE_LARGE_SCREEN_MODE:Z
+    if-nez v0, :background_fit_done
+
+    iget-object v0, p0, Lcom/smartisanos/launcher/view/b/t;->sceneMetrics:Lcom/smartisanos/launcher/data/FolderSceneMetrics$Result;
+    if-eqz v0, :background_fit_done
+    sget-object v1, Lcom/smartisanos/launcher/view/b/t;->aR:Lcom/smartisanos/smengine/F;
+    if-eqz v1, :background_fit_done
+
+    # The full-screen quad must not inherit the bookcase safe-area transform.
+    invoke-virtual {v0}, Lcom/smartisanos/launcher/data/FolderSceneMetrics$Result;->getUniformScale()F
+    move-result v2
+    const/high16 v3, 0x40000000    # 2.0f
+    mul-float/2addr v3, v2
+    sget v4, Lcom/smartisanos/launcher/data/Constants;->window_width:I
+    int-to-float v4, v4
+    div-float/2addr v4, v3
+    sget v5, Lcom/smartisanos/launcher/data/Constants;->window_height:I
+    int-to-float v5, v5
+    div-float/2addr v5, v3
+    const/high16 v3, 0x3f800000    # 1.0f
+    invoke-virtual {v1, v4, v5, v3}, Lcom/smartisanos/smengine/SceneNode;->setScale(FFF)V
+
+    invoke-virtual {v0}, Lcom/smartisanos/launcher/data/FolderSceneMetrics$Result;->getTranslateX()F
+    move-result v4
+    neg-float v4, v4
+    div-float/2addr v4, v2
+    invoke-virtual {v0}, Lcom/smartisanos/launcher/data/FolderSceneMetrics$Result;->getTranslateY()F
+    move-result v5
+    neg-float v5, v5
+    div-float/2addr v5, v2
+    const/4 v3, 0x0
+    invoke-virtual {v1, v4, v5, v3}, Lcom/smartisanos/smengine/SceneNode;->setTranslate(FFF)V
+    invoke-virtual {v1}, Lcom/smartisanos/smengine/SceneNode;->updateGeometricState()V
+
+    :background_fit_done
+    return-void
+.end method
+
 .method private Pz()V
     .locals 1
 
@@ -4177,6 +4218,8 @@
 
     .line 57
     :goto_5
+    invoke-direct/range {p0 .. p0}, Lcom/smartisanos/launcher/view/b/t;->fitBackgroundToViewport()V
+
     sget-object v4, Lcom/smartisanos/launcher/view/b/t;->UM:Lcom/smartisanos/smengine/F;
 
     if-nez v4, :cond_b

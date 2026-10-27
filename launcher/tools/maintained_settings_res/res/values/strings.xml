@@ -96,7 +96,7 @@
     <string name="follow_dialog_coyp_toast_text">Text Copied</string>
     <string name="follow_dialog_weibo_title_text">Copy the Weibo account name</string>
     <string name="follow_dialog_weixin_title_text">Copy the Wechat account name</string>
-    <string name="follow_website_title">Official Website</string>
+    <string name="follow_website_title">QQ Group</string>
     <string name="follow_weibo_content">锤子科技</string>
     <string name="follow_weibo_title">Weibo</string>
     <string name="follow_weixin_title">编译作者</string>
@@ -637,12 +637,12 @@
     <string name="facebook">Facebook</string>
     <string name="feedback_sdk_name">用户反馈_SDK</string>
     <string name="feedback_sdk_version">v1.3.5</string>
-    <string name="follow_website_content">www.smartisan.com</string>
+    <string name="follow_website_content">1108127974</string>
     <string name="follow_weixin_content">方便面的工作室</string>
     <string name="hello_world">Hello world!</string>
     <string name="launcher_color_sort_sub_text">Sort App Icon By Color</string>
     <string name="launcher_color_sort_text">Launcher Color Sort</string>
-    <string name="more_current_version_txt">1.5.8</string>
+    <string name="more_current_version_txt">1.6.0-T</string>
     <string name="os_update_dlg_cancel_btn">稍后更新</string>
     <string name="os_update_dlg_msg">检测到系统版本过低，为保证您个人信息安全，正常使用手机完整功能，请 Smartisan 用户尽快升级到最新系统版本！</string>
     <string name="os_update_dlg_ok_btn">现在更新</string>

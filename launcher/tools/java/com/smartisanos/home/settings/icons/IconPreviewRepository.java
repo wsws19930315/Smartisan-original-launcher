@@ -4,6 +4,7 @@ import android.app.ActivityManager;
 import android.content.ComponentCallbacks2;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -39,6 +40,62 @@ import java.util.Locale;
  * and discard callbacks whose row or page generation is no longer current.
  */
 public final class IconPreviewRepository implements ComponentCallbacks2 {
+    private static final int DRAWABLE_ID_OWNER_LIMIT = 4;
+    private static final int DRAWABLE_ID_LIMIT = 256;
+    private static final Map<Resources, DrawableResourceIds> drawableResourceIds =
+            new java.util.WeakHashMap<Resources, DrawableResourceIds>();
+
+    /** Resource-table metadata only; drawables and file/source availability stay live. */
+    private static final class DrawableResourceIds {
+        final java.lang.ref.WeakReference<Resources> owner;
+        final Object assets;
+        final Configuration configuration;
+        final LruCache<String, Integer> ids = new LruCache<String, Integer>(DRAWABLE_ID_LIMIT);
+
+        DrawableResourceIds(Resources resources) {
+            owner = new java.lang.ref.WeakReference<Resources>(resources);
+            assets = resources.getAssets();
+            configuration = new Configuration(resources.getConfiguration());
+        }
+
+        boolean matches(Resources resources) {
+            return owner.get() == resources && assets == resources.getAssets()
+                    && configuration.equals(resources.getConfiguration());
+        }
+    }
+
+    public static int drawableResourceId(Resources resources, String name, String packageName) {
+        if (name == null || packageName == null) {
+            return resources.getIdentifier(name, "drawable", packageName);
+        }
+        String key = packageName + '\u0000' + name;
+        DrawableResourceIds owner;
+        synchronized (drawableResourceIds) {
+            owner = drawableResourceIds.get(resources);
+            if (owner == null || !owner.matches(resources)) {
+                if (owner == null && drawableResourceIds.size() >= DRAWABLE_ID_OWNER_LIMIT) {
+                    drawableResourceIds.clear();
+                }
+                owner = new DrawableResourceIds(resources);
+                drawableResourceIds.put(resources, owner);
+            }
+            Integer id = owner.ids.get(key);
+            if (id != null) return id.intValue();
+        }
+        // Do not hold the metadata lock across framework resource-table work.
+        int id = resources.getIdentifier(name, "drawable", packageName);
+        synchronized (drawableResourceIds) {
+            // Configuration changes or memory trimming must not resurrect an old table.
+            if (drawableResourceIds.get(resources) == owner && owner.matches(resources)) {
+                owner.ids.put(key, Integer.valueOf(id));
+            }
+        }
+        return id;
+    }
+
+    private static void clearDrawableResourceIds() {
+        synchronized (drawableResourceIds) { drawableResourceIds.clear(); }
+    }
     public interface Callback { void onIconReady(String key, Bitmap bitmap); }
     public interface DrawableLoader { Drawable load() throws Exception; }
     public enum Priority { P0_VISIBLE, P1_ADJACENT, P2_IDLE }
@@ -182,10 +239,16 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
     public static final class PendingCallback {
         public final RequestSession session;
         public final Callback callback;
+        public final Priority priority;
 
         public PendingCallback(RequestSession session, Callback callback) {
+            this(session, callback, Priority.P0_VISIBLE);
+        }
+
+        public PendingCallback(RequestSession session, Callback callback, Priority priority) {
             this.session = session;
             this.callback = callback;
+            this.priority = priority;
         }
     }
 
@@ -237,7 +300,9 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
                 new ThreadPoolExecutor.AbortPolicy());
         metadataPool = metadataExecutor("icon-metadata", 16);
         indexPool = metadataExecutor("icon-directory", 4);
-        schedule(Priority.P2_IDLE, new Runnable() { public void run() {
+        // Catalog metadata belongs to the existing directory owner, not bitmap decoders.
+        indexPool.execute(new Runnable() { public void run() {
+            if (pauseP2) return;
             try { IconLibraryCatalog.load(app); } catch (Exception e) {
                 android.util.Log.w("SmartisanPerf", "ICON_CATALOG_LOAD_FAILED", e);
             }
@@ -646,12 +711,12 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
                                 : session.equals(existing.session))) return;
                     }
                 }
-                callbacks.add(new PendingCallback(session, callback));
+                callbacks.add(new PendingCallback(session, callback, priority));
                 return;
             }
             callbacks = new ArrayList<PendingCallback>();
             // A prefetch has a consumer even though it has no UI callback.
-            callbacks.add(new PendingCallback(session, callback));
+            callbacks.add(new PendingCallback(session, callback, priority));
             pending.put(key, callbacks);
             requestCallbacks = callbacks;
         }
@@ -673,6 +738,7 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
         RenderTask evicted=null;
         boolean accepted=false;
         synchronized(renderAdmission) {
+            synchronized(pending) {
             // Keep a small reserve for preparation which publishes the page's metadata.
             int capacity=incoming.key==null?MAX_RENDER_QUEUE_SIZE:MAX_RENDER_QUEUE_SIZE-8;
             if(decodePool.getQueue().size()>=capacity) {
@@ -691,10 +757,12 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
                 if(evicted!=null && !decodePool.getQueue().remove(evicted)) evicted=null;
             }
             if(decodePool.getQueue().size()<capacity) {decodePool.execute(incoming);accepted=true;}
+            // Detach rejected batches before another consumer can join them.
+            if(evicted!=null && evicted.key!=null) finish(evicted.key,null,evicted.callbacks);
+            if(!accepted && incoming.key!=null) finish(incoming.key,null,incoming.callbacks);
+            }
         }
-        if(evicted!=null && evicted.key!=null) finish(evicted.key,null,evicted.callbacks);
         if(!accepted) {
-            if(incoming.key!=null) finish(incoming.key,null,incoming.callbacks);
             android.util.Log.w("SmartisanPerf","ICON_RENDER_QUEUE_FULL");
         }
         return accepted;
@@ -703,6 +771,8 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
     private void trimSessionQueueIfNeeded(RequestSession session) {
         if (session == null) return;
         try {
+            // A visible join must not race the eviction of its shared prefetch batch.
+            synchronized (pending) {
             Object[] tasks = decodePool.getQueue().toArray();
             ArrayList<RenderTask> sessionTasks = new ArrayList<RenderTask>();
             for (Object t : tasks) {
@@ -713,11 +783,11 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
             if (sessionTasks.size() >= MAX_SESSION_QUEUE_SIZE) {
                 RenderTask candidateToEvict = null;
                 for (RenderTask t : sessionTasks) {
-                    if (t.priority == Priority.P2_IDLE) { candidateToEvict = t; break; }
+                    if (t.priority == Priority.P2_IDLE && !hasVisibleConsumers(t)) { candidateToEvict = t; break; }
                 }
                 if (candidateToEvict == null) {
                     for (RenderTask t : sessionTasks) {
-                        if (t.priority == Priority.P1_ADJACENT) { candidateToEvict = t; break; }
+                        if (t.priority == Priority.P1_ADJACENT && !hasVisibleConsumers(t)) { candidateToEvict = t; break; }
                     }
                 }
                 if (candidateToEvict != null) {
@@ -729,7 +799,17 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
                     }
                 }
             }
+            }
         } catch (Throwable ignored) {}
+    }
+
+    private boolean hasVisibleConsumers(RenderTask task) {
+        if (task.callbacks == null || pending.get(task.key) != task.callbacks) return false;
+        for (PendingCallback item : task.callbacks) {
+            if (item.priority == Priority.P0_VISIBLE && item.callback != null
+                    && (item.session == null || isSessionActive(item.session))) return true;
+        }
+        return false;
     }
 
     /** Schedules metadata/disk preparation without retaining or rasterizing a Bitmap. */
@@ -769,6 +849,7 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
     public void trimMemory() { trimMemory(ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW); }
 
     public void trimMemory(int level) {
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) clearDrawableResourceIds();
         if (level >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE) {
             pauseP2 = true;
             cache.evictAll();
@@ -820,7 +901,7 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
     }
 
     @Override public void onTrimMemory(int level) { trimMemory(level); }
-    @Override public void onConfigurationChanged(Configuration configuration) { }
+    @Override public void onConfigurationChanged(Configuration configuration) { clearDrawableResourceIds(); }
     @Override public void onLowMemory() { trimMemory(ComponentCallbacks2.TRIM_MEMORY_COMPLETE); }
 
     private final class RenderTask implements Runnable, Comparable<RenderTask> {
@@ -1000,7 +1081,7 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
         if (TextUtils.isEmpty(key)) return false;
         // Check built-in resources
         String resName = key.replace('.', '_').replace('-', '_');
-        int id = app.getResources().getIdentifier(resName, "drawable", app.getPackageName());
+        int id = drawableResourceId(app.getResources(), resName, app.getPackageName());
         if (id != 0) return true;
 
         // Check local disk cache
@@ -1022,10 +1103,10 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
         if (TextUtils.isEmpty(sourceId)) return null;
         // 1. Built-in resources
         String resName = sourceId.replace('.', '_').replace('-', '_');
-        int resId = app.getResources().getIdentifier(resName, "drawable", app.getPackageName());
+        int resId = drawableResourceId(app.getResources(), resName, app.getPackageName());
         if (resId != 0) {
             try {
-                Drawable d = app.getResources().getDrawable(resId);
+                Drawable d = IconBitmapDecoder.loadResourceDrawablePreservingPixels(app.getResources(), resId);
                 if (d != null) return d;
             } catch (Throwable ignored) {}
         }
@@ -1089,7 +1170,7 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
         int resId = app.getResources().getIdentifier(resName, "drawable", app.getPackageName());
         if (resId != 0) {
             try {
-                Drawable d = app.getResources().getDrawable(resId);
+                Drawable d = IconBitmapDecoder.loadResourceDrawablePreservingPixels(app.getResources(), resId);
                 if (d != null) return d;
             } catch (Throwable ignored) {}
         }
@@ -1216,8 +1297,10 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
                     byte[] buffer = new byte[8192];
                     int read;
                     while ((read = stream.read(buffer)) != -1) {
-                        if ((fetch != null && fetch.cancelled) || bytes.size() + read > 512 * 1024
-                                || android.os.SystemClock.uptimeMillis() > deadline) return false;
+                        if (fetch != null && fetch.cancelled) return false;
+                        if (bytes.size() + read > 512 * 1024
+                                || android.os.SystemClock.uptimeMillis() > deadline)
+                            throw new java.io.IOException("Online icon response exceeds limits");
                         bytes.write(buffer, 0, read);
                     }
                     data = bytes.toByteArray();
@@ -1268,6 +1351,13 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
         catch (java.util.concurrent.RejectedExecutionException full) { return false; }
     }
     /** Large directory preparation belongs to bounded IO, never the preview render workers. */
+    /** Process-owned persistence survives preview trimming and Activity session cancellation. */
+    public boolean schedulePersistence(Runnable operation) {
+        if (operation == null) return false;
+        try { onlinePool.execute(operation); return true; }
+        catch (java.util.concurrent.RejectedExecutionException full) { return false; }
+    }
+
     public boolean scheduleIo(RequestSession session, Runnable operation) {
         if (!isSessionActive(session)) return false;
         try { onlinePool.execute(new IoOperation(session,operation)); return true; }
@@ -1276,17 +1366,54 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
 
     private static boolean hasValidPngChunks(byte[] data) {
         int offset = 8;
+        boolean hasImageData = false;
         java.nio.ByteBuffer bytes = java.nio.ByteBuffer.wrap(data);
         while (offset <= data.length - 12) {
             int length = bytes.getInt(offset);
             if (length < 0 || length > data.length - offset - 12) return false;
+            int type = bytes.getInt(offset + 4);
+            if (offset == 8) {
+                if (type != 0x49484452 || length != 13) return false;
+            } else if (type == 0x49484452) return false;
             java.util.zip.CRC32 crc = new java.util.zip.CRC32();
             crc.update(data, offset + 4, length + 4);
             if ((int) crc.getValue() != bytes.getInt(offset + 8 + length)) return false;
-            if (bytes.getInt(offset + 4) == 0x49454e44) return length == 0 && offset + 12 == data.length;
+            if (type == 0x49444154 && length > 0) hasImageData = true;
+            if (type == 0x49454e44)
+                return hasImageData && length == 0 && offset + 12 == data.length
+                        && hasValidPngData(data);
             offset += length + 12;
         }
         return false;
+    }
+
+    /** Check the shared IDAT stream without allocating pixels on the IO executor. */
+    private static boolean hasValidPngData(byte[] data) {
+        java.util.zip.Inflater inflater = new java.util.zip.Inflater();
+        try {
+            java.nio.ByteBuffer bytes = java.nio.ByteBuffer.wrap(data);
+            byte[] buffer = new byte[8192];
+            long inflated = 0L;
+            for (int offset = 8; offset <= data.length - 12;) {
+                int length = bytes.getInt(offset);
+                if (bytes.getInt(offset + 4) == 0x49444154 && !inflater.finished()) {
+                    inflater.setInput(data, offset + 8, length);
+                    while (!inflater.needsInput() && !inflater.finished()) {
+                        int read = inflater.inflate(buffer);
+                        inflated += read;
+                        // 1024x1024 RGBA16 plus all Adam7 scanline filter bytes fit below 9 MiB.
+                        if (inflated > 9L * 1024L * 1024L
+                                || (read == 0 && !inflater.needsInput() && !inflater.finished())) return false;
+                    }
+                }
+                offset += length + 12;
+            }
+            return inflated > 0L && inflater.finished();
+        } catch (java.util.zip.DataFormatException invalid) {
+            return false;
+        } finally {
+            inflater.end();
+        }
     }
 
     public void logPipelineState(String reason) {
@@ -1326,19 +1453,17 @@ public final class IconPreviewRepository implements ComponentCallbacks2 {
             JSONObject root = new JSONObject(json);
             JSONObject variants = root.optJSONObject("variants");
             if (variants != null) {
-                JSONArray names = variants.names();
-                if (names != null) {
-                    for (int i = 0; i < names.length(); i++) {
-                        String pkg = names.optString(i, null);
-                        JSONArray arr = pkg == null ? null : variants.optJSONArray(pkg);
-                        if (pkg == null || arr == null) continue;
-                        ArrayList<String> list = new ArrayList<String>();
-                        for (int j = 0; j < arr.length(); j++) {
-                            String value = stripPng(arr.optString(j, null));
-                            if (!TextUtils.isEmpty(value) && !list.contains(value)) list.add(value);
-                        }
-                        if (!list.isEmpty()) out.put(pkg, list);
+                java.util.Iterator<String> names = variants.keys();
+                while (names.hasNext()) {
+                    String pkg = names.next();
+                    JSONArray arr = pkg == null ? null : variants.optJSONArray(pkg);
+                    if (pkg == null || arr == null) continue;
+                    ArrayList<String> list = new ArrayList<String>();
+                    for (int j = 0; j < arr.length(); j++) {
+                        String value = stripPng(arr.optString(j, null));
+                        if (!TextUtils.isEmpty(value) && !list.contains(value)) list.add(value);
                     }
+                    if (!list.isEmpty()) out.put(pkg, list);
                 }
             }
         } catch (Throwable ignored) {

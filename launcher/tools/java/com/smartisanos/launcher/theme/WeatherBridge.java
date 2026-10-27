@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.location.Location;
+import android.location.Criteria;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.LocationListener;
@@ -42,6 +43,7 @@ public final class WeatherBridge {
     private static final String PREFS = "launcher_dynamic_weather";
     private static final String ACTION_UPDATE = "com.smartisanos.weather.data.update";
     private static final long WEATHER_TTL_MS = 60L * 60L * 1000L;
+    private static final long LOCATION_REQUEST_TIMEOUT_MS = 20000L;
     private static final long LOCATION_TTL_MS = 6L * 60L * 60L * 1000L;
     private static final int REQUEST_LOCATION = 2402;
     private static final Object LOCK = new Object();
@@ -254,6 +256,16 @@ public final class WeatherBridge {
 
     public static String getWeatherLastError(Context context) {
         return context == null ? "" : prefs(context).getString("weather_last_error", "");
+    }
+
+    public static void registerStatusListener(Context context,
+            SharedPreferences.OnSharedPreferenceChangeListener listener) {
+        prefs(context).registerOnSharedPreferenceChangeListener(listener);
+    }
+
+    public static void unregisterStatusListener(Context context,
+            SharedPreferences.OnSharedPreferenceChangeListener listener) {
+        prefs(context).unregisterOnSharedPreferenceChangeListener(listener);
     }
 
     public interface CitySearchCallback {
@@ -609,66 +621,113 @@ public final class WeatherBridge {
     }
 
     private static void requestSingleLocation(final Context context) {
-        if (!LauncherSettingBridge.dynamicWeatherCalendarEnabled(context)) {
-            return;
-        }
+        if (!LauncherSettingBridge.dynamicWeatherCalendarEnabled(context)) return;
         synchronized (LOCK) {
-            if (sLocationRequesting) {
-                return;
-            }
+            if (sLocationRequesting) return;
             sLocationRequesting = true;
         }
+        final LocationManager manager;
         try {
-            final LocationManager manager =
-                    (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-            if (manager == null) {
-                finishLocationRequest();
-                return;
-            }
-            LocationListener listener = new LocationListener() {
-                // Override every default method from the current Android SDK.
-                // The injected dex is not desugared together with the original
-                // launcher, so leaving one default method unresolved makes old
-                // vendor ROMs look for the non-existent LocationListener$-CC.
-                @Override public void onFlushComplete(int requestCode) {}
-
-                @Override
-                public void onLocationChanged(Location location) {
-                    try {
-                        manager.removeUpdates(this);
-                    } catch (Throwable ignored) {
-                    }
-                    finishLocationRequest();
-                    if (location != null
-                            && LauncherSettingBridge.dynamicWeatherCalendarEnabled(context)) {
-                        if (isAutomaticLocation(context)) {
-                            rememberLocation(context, location);
-                            fetchAsync(context, location.getLatitude(), location.getLongitude());
-                        } else {
-                            synchronized (LOCK) {
-                                sPendingForcedRefresh = false;
-                            }
-                            scheduleRefresh(context, true);
-                        }
-                    }
-                }
-
-                @Override
-                public void onLocationChanged(List<Location> locations) {
-                    if (locations != null && !locations.isEmpty()) {
-                        onLocationChanged(locations.get(locations.size() - 1));
-                    }
-                }
-
-                @Override public void onStatusChanged(String provider, int status, Bundle extras) {}
-                @Override public void onProviderEnabled(String provider) {}
-                @Override public void onProviderDisabled(String provider) {}
-            };
-            manager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, listener,
-                    Looper.getMainLooper());
-        } catch (Throwable error) {
+            manager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        } catch (RuntimeException unavailable) {
             finishLocationRequest();
-            Log.w(TAG, "single location request failed", error);
+            return;
+        }
+        if (manager == null) {
+            finishLocationRequest();
+            prefs(context).edit().putString("weather_last_error", "系统定位服务不可用").apply();
+            return;
+        }
+        final Handler handler = new Handler(Looper.getMainLooper());
+        class Request implements LocationListener, Runnable {
+            private boolean completed;
+            private boolean finish() {
+                synchronized (this) {
+                    if (completed) return false;
+                    completed = true;
+                }
+                handler.removeCallbacks(this);
+                try { manager.removeUpdates(this); } catch (RuntimeException ignored) {}
+                finishLocationRequest();
+                return true;
+            }
+            void fail(String message) {
+                if (!finish()) return;
+                synchronized (LOCK) { sPendingForcedRefresh = false; }
+                if (LauncherSettingBridge.dynamicWeatherCalendarEnabled(context)
+                        && isAutomaticLocation(context)) {
+                    prefs(context).edit().putString("weather_last_error", message).apply();
+                }
+            }
+            @Override public void run() { fail("定位超时，请确认系统定位已开启后重试"); }
+            @Override public void onLocationChanged(Location location) {
+                if (location == null || !validCoordinate(location.getLatitude(), location.getLongitude())) {
+                    fail("未能获取有效位置，请检查系统定位后重试");
+                    return;
+                }
+                if (!finish()) return;
+                if (!LauncherSettingBridge.dynamicWeatherCalendarEnabled(context)) return;
+                if (isAutomaticLocation(context)) {
+                    prefs(context).edit().remove("weather_last_error").apply();
+                    rememberLocation(context, location);
+                    fetchAsync(context, location.getLatitude(), location.getLongitude());
+                } else {
+                    synchronized (LOCK) { sPendingForcedRefresh = false; }
+                    scheduleRefresh(context, true);
+                }
+            }
+            // Keep all current SDK default methods explicit for old vendor runtimes.
+            @Override public void onLocationChanged(List<Location> locations) {
+                if (locations != null && !locations.isEmpty()) {
+                    onLocationChanged(locations.get(locations.size() - 1));
+                }
+            }
+            @Override public void onFlushComplete(int requestCode) {}
+            @Override public void onStatusChanged(String provider, int status, Bundle extras) {}
+            @Override public void onProviderEnabled(String provider) {}
+            @Override public void onProviderDisabled(String provider) {}
+        }
+        final Request listener = new Request();
+        if (!handler.postDelayed(listener, LOCATION_REQUEST_TIMEOUT_MS)) {
+            listener.fail("定位服务不可用，请稍后重试");
+            return;
+        }
+        Criteria criteria = new Criteria();
+        criteria.setAccuracy(Criteria.ACCURACY_COARSE);
+        try {
+            // Android routes Criteria requests through its fused provider (API 19+).
+            // This uses the platform service; it does not depend on a Google SDK.
+            manager.requestSingleUpdate(criteria, listener, Looper.getMainLooper());
+            return;
+        } catch (IllegalArgumentException | UnsupportedOperationException unavailableFusedProvider) {
+            // Some vendor builds omit fused service; use an enabled permitted provider.
+        } catch (SecurityException denied) {
+            listener.fail("定位权限不可用，请检查授权后重试");
+            return;
+        } catch (RuntimeException unavailable) {
+            listener.fail("定位服务不可用，请检查系统定位设置");
+            return;
+        }
+        try {
+            List<String> enabled = manager.getProviders(true);
+            String[] candidates = {manager.getBestProvider(criteria, true),
+                    "fused", LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER};
+            for (String provider : candidates) {
+                if (provider == null || LocationManager.PASSIVE_PROVIDER.equals(provider)
+                        || enabled == null || !enabled.contains(provider)) continue;
+                if (LocationManager.GPS_PROVIDER.equals(provider) && Build.VERSION.SDK_INT >= 23
+                        && context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) continue;
+                try {
+                    manager.requestSingleUpdate(provider, listener, Looper.getMainLooper());
+                    return;
+                } catch (IllegalArgumentException | SecurityException unavailableProvider) {
+                    // Continue to a different enabled provider; never widen permissions here.
+                }
+            }
+            listener.fail("没有可用的定位服务，请检查系统定位设置");
+        } catch (RuntimeException unavailable) {
+            listener.fail("定位服务不可用，请检查系统定位设置");
         }
     }
 
@@ -686,7 +745,7 @@ public final class WeatherBridge {
                 return null;
             }
             Location best = null;
-            String[] providers = new String[]{LocationManager.NETWORK_PROVIDER,
+            String[] providers = new String[]{"fused", LocationManager.NETWORK_PROVIDER,
                     LocationManager.PASSIVE_PROVIDER, LocationManager.GPS_PROVIDER};
             for (String provider : providers) {
                 try {

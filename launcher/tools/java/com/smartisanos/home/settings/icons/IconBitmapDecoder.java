@@ -2,6 +2,10 @@ package com.smartisanos.home.settings.icons;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.content.res.Resources;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.util.TypedValue;
 import android.util.Log;
 
 import java.io.File;
@@ -14,6 +18,25 @@ public final class IconBitmapDecoder {
     private static final String TAG = "SmartisanPerf";
 
     private IconBitmapDecoder() {
+    }
+
+    /** Retains the selected bitmap's pixels while preserving its density-based layout size. */
+    public static Drawable loadResourceDrawablePreservingPixels(Resources resources, int resourceId) {
+        if (resources == null || resourceId == 0) return null;
+        TypedValue value = new TypedValue();
+        resources.getValue(resourceId, value, true);
+        String path = value.string == null ? "" : value.string.toString();
+        if (value.density > resources.getDisplayMetrics().densityDpi
+                && value.density != TypedValue.DENSITY_NONE
+                && !path.endsWith(".9.png")
+                && (path.endsWith(".png") || path.endsWith(".jpg") || path.endsWith(".webp"))) {
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inScaled = false;
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+            Bitmap bitmap = BitmapFactory.decodeResource(resources, resourceId, options);
+            if (bitmap != null) return new BitmapDrawable(resources, bitmap);
+        }
+        return resources.getDrawable(resourceId);
     }
 
     /**

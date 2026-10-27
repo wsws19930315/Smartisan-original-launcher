@@ -44,7 +44,8 @@ public final class BackupArchiveReader {
             java.util.HashSet<Integer> usedPages = new java.util.HashSet<Integer>();
             for (int i = 0; i < items.length(); i++) {
                 org.json.JSONObject item = items.optJSONObject(i);
-                if (item == null || item.optInt("folderIndex", -1) >= 0
+                if (item == null || (item.optInt("folderIndex", -1) >= 0
+                        && item.optInt("itemType", -1) != 2)
                         || item.optInt("cellIndex", -1) < 0) continue;
                 int pageIndex = item.optInt("pageIndex", -1);
                 if (pageIndex >= 0) usedPages.add(Integer.valueOf(pageIndex));

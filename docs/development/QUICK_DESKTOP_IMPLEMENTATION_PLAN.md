@@ -1,5 +1,9 @@
 # 快捷桌面（负一屏）原版证据与冻结实施方案
 
+2026-10-24异常路径补充：当前null/blank截图失败现在通知原Controller关闭等待中的Host，复用现有清理并以generation保护新手势。Android9及16的Controller300、Capture26和Root顺序3项通过，旧源码负控失败；Android16模拟器五个有效覆盖返回、五次熄屏返回，V2458A真机五次覆盖返回及搜索/设置通过。正式v1.6.0/code34。总开关保留各自原值；物理PIN锁屏、跨ROM/高刷/长稳仍未完成。详见DEVELOPMENT_LOG同日最新条目。
+
+2026-10-24限定验收补充：零进度时继续接收当前触摸序列终止事件，避免Host已归零却未触发Popup清理。Android9原生Host740检查通过；后续Controller扩展至219检查并在Android9/16通过，Root顺序3项通过。Android9正式包五轮Popup移除后首页翻页、BACK/HOME释放通过；Android16补五轮零点关闭和五轮半开多指取消后窗口移除/首页翻页，以及一次真实长按编辑取消。总开关均恢复原值，详见DEVELOPMENT_LOG同日记录。本项不替代以下完整Gate，半开强制编辑转场仅隔离覆盖，跨ROM/高刷/锁屏/异常分离与长稳仍待验收。
+
 ## 结论
 
 项目可以在不引入桌面分页、不改桌面数据库、不申请悬浮窗权限、也不依赖 Smartisan 私有系统窗口的前提下，实现接近原版的快捷桌面，并使用 Android 标准 `AppWidgetHost` 承载第三方小组件。

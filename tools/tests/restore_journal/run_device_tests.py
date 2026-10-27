@@ -72,6 +72,7 @@ def main():
     remote = '/data/local/tmp/smartisan-restore-journal-f04-' + uuid.uuid4().hex
     device('shell', 'mkdir', remote)
     device('push', dex / 'classes.dex', remote + '/probe.dex')
+    (output / 'workspace.json').write_text(json.dumps({'workspace': remote}), encoding='utf-8')
     identity = device('shell', 'getprop', 'ro.build.version.sdk').strip()
     before = device('shell', 'pidof', 'com.smartisanos.launcher', expected=(0, 1)).strip()
     command = f'CLASSPATH={remote}/probe.dex app_process /system/bin com.smartisanos.launcher.backup.DeviceCheckpointProbe {remote}'
@@ -92,6 +93,11 @@ def main():
     assert device('shell', 'cat', remote + '/kill.marker').strip() == 'atomic-write-in-progress'
     torn = device('shell', command + ' torn-restart', log='torn-restart.log')
     assert 'PASS TORN_WRITE_RESTART_CHECKS=' in torn, torn
+    snapshot = device('shell', command + ' snapshot', log='snapshot.log')
+    assert 'PASS SNAPSHOT_PLATFORM_CHECKS=' in snapshot, snapshot
+    device('shell', command + ' snapshot-seed', expected=(137, -9), log='snapshot-sigkill.log')
+    snapshot_restart = device('shell', command + ' snapshot-restart', log='snapshot-restart.log')
+    assert 'PASS SNAPSHOT_RESTART_CHECKS=' in snapshot_restart, snapshot_restart
     after = device('shell', 'pidof', 'com.smartisanos.launcher', expected=(0, 1)).strip()
     (output / 'summary.json').write_text(json.dumps({
         'serial': args.serial, 'sdk': identity, 'workspace': remote,
@@ -103,6 +109,8 @@ def main():
         'guard_result': guard.strip().splitlines()[-1],
         'torn_write_result': torn.strip().splitlines()[-1],
         'scope': 'real Android MAIN Handler/Looper worker callbacks, writer lease, AtomicFile/JSON/EACCES, post-checkpoint and unfinished platform write SIGKILL; imports/UI/prefs are doubles',
+        'snapshot_result': snapshot.strip().splitlines()[-1],
+        'snapshot_restart_result': snapshot_restart.strip().splitlines()[-1],
         'installed_apk': False, 'desktop_data_accessed': False,
     }, ensure_ascii=False, indent=2), encoding='utf-8')
     print(platform.strip().splitlines()[-1])
@@ -111,6 +119,8 @@ def main():
     print(restart.strip().splitlines()[-1])
     print(guard.strip().splitlines()[-1])
     print(torn.strip().splitlines()[-1])
+    print(snapshot.strip().splitlines()[-1])
+    print(snapshot_restart.strip().splitlines()[-1])
     print(f'Launcher PID before={before} after={after}; no APK installed; evidence={output}')
 
 

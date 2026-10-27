@@ -54,7 +54,7 @@ public class IconManager {
     }
 
     public String getLableForPackage(String packageName, String componentName) {
-        RedirectIconInfo redirect = RedirectIconDB.getRedirectIconInfo(mContext, packageName, componentName);
+        RedirectIconInfo redirect = RedirectIconDB.getRedirectIconMetadata(mContext, packageName, componentName);
         if (redirect != null && redirect.displayName != null && redirect.displayName.trim().length() > 0) {
             return redirect.displayName;
         }

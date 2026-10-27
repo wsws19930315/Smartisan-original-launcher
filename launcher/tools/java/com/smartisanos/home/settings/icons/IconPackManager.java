@@ -49,7 +49,8 @@ public final class IconPackManager {
     public static int searchFailureCount() { return sSearchFailedPackages; }
     public static String cachedPackLabel(String pack) { String label=sSearchLabels.get(pack);return label==null?pack:label; }
     public static boolean isSearchIndexReady(IconLibraryCatalog catalog) {
-        return catalog!=null && sSearchReadyGeneration==sPackGeneration && sSearchRevision.equals(catalog.revision);
+        return catalog!=null && catalog==IconLibraryCatalog.peek()
+                && sSearchReadyGeneration==sPackGeneration && sSearchRevision.equals(catalog.revision);
     }
     public static boolean isSearchSnapshotCurrent(SearchSnapshot snapshot) {
         return snapshot!=null && snapshot.generation==sPackGeneration && snapshot.epoch==sSearchDatabaseEpoch;
@@ -76,6 +77,7 @@ public final class IconPackManager {
     public static void prepareSearchIndex(Context context,IconPreviewRepository.RequestSession session,
             IconLibraryCatalog catalog) throws Exception {
         synchronized(sIndexLock) {
+            if(catalog==null || catalog!=IconLibraryCatalog.peek()) throw new android.os.OperationCanceledException("Stale catalog for pack directory");
             android.database.sqlite.SQLiteDatabase db=searchDb(context);
             final long generation=sPackGeneration;
             if(isSearchIndexReady(catalog)) return;
@@ -187,6 +189,8 @@ public final class IconPackManager {
                 if(db.delete("icons","pack=?",new String[]{pack})>0) ++sSearchDatabaseEpoch;
                 db.delete("packs","package=?",new String[]{pack});
             }
+            checkDirectorySession(session,generation);
+            if(catalog!=IconLibraryCatalog.peek()) throw new android.os.OperationCanceledException("Catalog invalidated during pack indexing");
             sSearchLabels=java.util.Collections.unmodifiableMap(labels);
             sSearchFailedPackages=failed;
             sSearchRevision=catalog.revision;sSearchReadyGeneration=generation;
@@ -804,6 +808,7 @@ public final class IconPackManager {
         ++sPackGeneration;
         sLoadedPackage = null;
         sIconPackList = null;
+        sCandidateCache.evictAll();
         sPackageToDrawable.clear();
         sComponentToDrawable.clear();
         synchronized (sPackMapCache) { sPackMapCache.clear(); }

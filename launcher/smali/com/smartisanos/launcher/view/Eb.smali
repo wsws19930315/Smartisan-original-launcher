@@ -5130,7 +5130,7 @@
 .end method
 
 .method public Vh()V
-    .locals 8
+    .locals 9
 
     .line 1
     invoke-direct {p0}, Lcom/smartisanos/launcher/view/Eb;->Jx()Z
@@ -5190,14 +5190,26 @@
 
     invoke-virtual {v0}, Lcom/smartisanos/launcher/view/b/fa;->init()V
 
+    const-string v8, "LAUNCH_SCENE_PAGES_BOUND"
+    invoke-static/range {v8 .. v8}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+
     .line 8
     invoke-direct {p0}, Lcom/smartisanos/launcher/view/Eb;->Ex()V
+
+    const-string v8, "LAUNCH_SCENE_EX_READY"
+    invoke-static/range {v8 .. v8}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     .line 9
     invoke-direct {p0}, Lcom/smartisanos/launcher/view/Eb;->yx()V
 
+    const-string v8, "LAUNCH_SCENE_YX_READY"
+    invoke-static/range {v8 .. v8}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+
     .line 10
     invoke-direct {p0}, Lcom/smartisanos/launcher/view/Eb;->Bx()V
+
+    const-string v8, "LAUNCH_SCENE_BX_READY"
+    invoke-static/range {v8 .. v8}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     .line 11
     sget-boolean v0, Lcom/smartisanos/launcher/va;->DBG:Z
@@ -9278,6 +9290,15 @@
     return-void
 .end method
 
+.method public folderCreationAnimationDelta(F)F
+    .locals 1
+
+    iget v0, p0, Lcom/smartisanos/launcher/view/Eb;->fx:F
+    invoke-static {p1, v0}, Lcom/smartisanos/launcher/theme/LauncherSettingBridge;->folderAnimationFrameDelta(FF)F
+    move-result p1
+    return p1
+.end method
+
 .method public getAnimationTimeScale()F
     .locals 2
 
@@ -12128,6 +12149,22 @@
     move v2, v3
 
     :cond_held_pointer_delta_done
+    # Restore original per-frame Folder progression at the app's current refresh cadence.
+    # Opening is created inside Ra.T; subsequent opening/closing ticks are gated here.
+    iget-object v1, p0, Lcom/smartisanos/launcher/view/Eb;->Ix:Lcom/smartisanos/launcher/view/b/t;
+    if-eqz v1, :folder_frame_delta_done
+    invoke-virtual {v1}, Lcom/smartisanos/launcher/view/b/t;->Zr()Z
+    move-result v1
+    if-nez v1, :folder_frame_delta_active
+    iget-object v1, p0, Lcom/smartisanos/launcher/view/Eb;->Ix:Lcom/smartisanos/launcher/view/b/t;
+    invoke-virtual {v1}, Lcom/smartisanos/launcher/view/b/t;->Yr()Z
+    move-result v1
+    if-eqz v1, :folder_frame_delta_done
+    :folder_frame_delta_active
+    iget v3, p0, Lcom/smartisanos/launcher/view/Eb;->fx:F
+    invoke-static {v2, v3}, Lcom/smartisanos/launcher/theme/LauncherSettingBridge;->folderAnimationFrameDelta(FF)F
+    move-result v2
+    :folder_frame_delta_done
     invoke-virtual {v0, v2}, Lcom/smartisanos/smengine/Ra;->T(F)V
 
     goto :goto_0

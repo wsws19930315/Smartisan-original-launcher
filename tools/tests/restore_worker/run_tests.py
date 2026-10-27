@@ -18,7 +18,13 @@ spec.loader.exec_module(fixtures)
 B = 'com/smartisanos/launcher/backup/'
 R = 'com/smartisanos/launcher/reload/'
 SOURCES = {k: v for k, v in fixtures.SOURCES.items() if k not in (B + 'CheckpointTest.java', R + 'LauncherColdReloadCoordinator.java')}
+# HOME intent routing is a boundary double here; this suite tests restore worker
+# ordering and MAIN handoff, not the production LauncherHomeCompat policy.
 SOURCES.update({
+'com/smartisanos/launcher/gesture/LauncherHomeCompat.java': '''package com.smartisanos.launcher.gesture;public final class LauncherHomeCompat{
+ public static android.content.Intent createLauncherHomeIntent(android.content.Context context){
+  return new android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_HOME).setPackage(context.getPackageName());
+ }}''',
 'android/os/Looper.java': '''package android.os;public class Looper{public static final Thread MAIN=Thread.currentThread();private static final Looper INSTANCE=new Looper();public static Looper getMainLooper(){return INSTANCE;}}''',
 'android/os/Handler.java': '''package android.os;import java.util.concurrent.*;public class Handler{
  public static final BlockingQueue<Runnable> queue=new LinkedBlockingQueue<>();public Handler(Looper l){}

@@ -1,0 +1,182 @@
+{
+  "sdk": 36,
+  "navigation_mode": "2",
+  "apk_sha256": "4aa4982a514dc9b1eb0e4a9e54f01859977021f8f558282faa4fd71f80bef9b6",
+  "pid_before": "9131",
+  "groups": [
+    {
+      "label": "binder-off-a",
+      "enabled": false,
+      "pids": [
+        "9131"
+      ],
+      "valid_home_rounds": [
+        "return-0",
+        "return-1",
+        "return-2",
+        "return-3",
+        "return-4"
+      ],
+      "sessions": [
+        {
+          "round": "return-0",
+          "resume_ns": 6576369287800,
+          "first_draw_ms": 143.483,
+          "sf_first_visible_buffer_ms": 538.108,
+          "video_gap_estimate_ms": 836.722,
+          "video_background_first_pts_s": 1.260367,
+          "video_icons_first_pts_s": 2.097089
+        },
+        {
+          "round": "return-1",
+          "resume_ns": 6579694244700,
+          "first_draw_ms": 205.71,
+          "sf_first_visible_buffer_ms": 654.053,
+          "video_gap_estimate_ms": 592.466,
+          "video_background_first_pts_s": 4.613678,
+          "video_icons_first_pts_s": 5.206144
+        },
+        {
+          "round": "return-2",
+          "resume_ns": 6583050087000,
+          "first_draw_ms": 154.767,
+          "sf_first_visible_buffer_ms": 626.684,
+          "video_gap_estimate_ms": 611.411,
+          "video_background_first_pts_s": 7.928767,
+          "video_icons_first_pts_s": 8.540178
+        },
+        {
+          "round": "return-3",
+          "resume_ns": 6586841886900,
+          "first_draw_ms": 143.125,
+          "sf_first_visible_buffer_ms": 484.326,
+          "video_gap_estimate_ms": 340.222,
+          "video_background_first_pts_s": 11.865911,
+          "video_icons_first_pts_s": 12.206133
+        },
+        {
+          "round": "return-4",
+          "resume_ns": 6590438083200,
+          "first_draw_ms": 118.381,
+          "sf_first_visible_buffer_ms": 661.797,
+          "video_gap_estimate_ms": 617.2,
+          "video_background_first_pts_s": 15.447589,
+          "video_icons_first_pts_s": 16.064789
+        }
+      ],
+      "video_gap_median_ms": 611.411,
+      "sf_visible_median_ms": 626.684
+    },
+    {
+      "label": "binder-on-b",
+      "enabled": true,
+      "pids": [
+        "9131"
+      ],
+      "valid_home_rounds": [
+        "return-1",
+        "return-3",
+        "return-4"
+      ],
+      "sessions": [
+        {
+          "round": "return-1",
+          "resume_ns": 6615979218500,
+          "first_draw_ms": 128.965,
+          "sf_first_visible_buffer_ms": 516.562,
+          "video_gap_estimate_ms": 785.067,
+          "video_background_first_pts_s": 4.199322,
+          "video_icons_first_pts_s": 4.984389
+        },
+        {
+          "round": "return-3",
+          "resume_ns": 6622403654500,
+          "first_draw_ms": 117.315,
+          "sf_first_visible_buffer_ms": 550.006,
+          "video_gap_estimate_ms": 537.389,
+          "video_background_first_pts_s": 10.662411,
+          "video_icons_first_pts_s": 11.1998
+        },
+        {
+          "round": "return-4",
+          "resume_ns": 6625807282000,
+          "first_draw_ms": 211.779,
+          "sf_first_visible_buffer_ms": 582.004,
+          "video_gap_estimate_ms": 382.077,
+          "video_background_first_pts_s": 14.557556,
+          "video_icons_first_pts_s": 14.939633
+        }
+      ],
+      "video_gap_median_ms": 537.389,
+      "sf_visible_median_ms": 550.006
+    },
+    {
+      "label": "binder-off-a2",
+      "enabled": false,
+      "pids": [
+        "9131"
+      ],
+      "valid_home_rounds": [
+        "return-1",
+        "return-2",
+        "return-4"
+      ],
+      "sessions": [
+        {
+          "round": "return-1",
+          "resume_ns": 6652654901700,
+          "first_draw_ms": 111.913,
+          "sf_first_visible_buffer_ms": 495.414,
+          "video_gap_estimate_ms": 472.144,
+          "video_background_first_pts_s": 4.283689,
+          "video_icons_first_pts_s": 4.755833
+        },
+        {
+          "round": "return-2",
+          "resume_ns": 6656400161900,
+          "first_draw_ms": 153.32,
+          "sf_first_visible_buffer_ms": 540.431,
+          "video_gap_estimate_ms": 361.378,
+          "video_background_first_pts_s": 8.238789,
+          "video_icons_first_pts_s": 8.600167
+        },
+        {
+          "round": "return-4",
+          "resume_ns": 6663401583300,
+          "first_draw_ms": 179.701,
+          "sf_first_visible_buffer_ms": 532.026,
+          "video_gap_estimate_ms": 513.955,
+          "video_background_first_pts_s": 15.028156,
+          "video_icons_first_pts_s": 15.542111
+        }
+      ],
+      "video_gap_median_ms": 472.144,
+      "sf_visible_median_ms": 532.026
+    }
+  ],
+  "pid_after": "9131",
+  "resolved_device_transaction": 17,
+  "reflection_candidate": "DE83711A0706DDC0775450837B58C058B737F3F73FF10D95AAE1EA9AE8F3D614",
+  "reflection_result": "Blocked hidden method; zoom stayed 0. Excluded from effect comparison.",
+  "pooled_off_video_gap_median_ms": 553.2105,
+  "on_video_gap_median_ms": 537.389,
+  "pooled_off_sf_visible_median_ms": 539.2695,
+  "on_sf_visible_median_ms": 550.006,
+  "decision": "NO_RELIABLE_IMPROVEMENT; archive candidate and restore production source/APK.",
+  "limits": [
+    "Only Android16 emulator tested; OPPO12 and vivo9/16 not tested. Android8-10 skip guard reviewed only.",
+    "WM zoom values 0/1/0 prove activation; invocation and GL draw are not display presentation.",
+    "Video feature boundaries visually reviewed; irregular recording intervals and SF sampling prevent interpreting small median differences as causal gains.",
+    "Temporary ADB-resolved transport parameter is a diagnostic fixture, not a standalone shipping runtime resolver.",
+    "Four attempts ending in Settings excluded. Earlier cold setup/blocked reflection groups excluded."
+  ],
+  "restoration": {
+    "source_matches_task_start": true,
+    "capture_tool_matches_task_start": true,
+    "final_build_sha256": "938942bc197006ed364a5051df958f951c66ec0ba471ee4611b2958a714409dc",
+    "device_restored_apk_sha256": "43a8f180580944b7df447adc166941304c737cea3707940a030729c9206f0f2e",
+    "zoom_request": 0,
+    "diagnostics_and_transaction_settings": "absent",
+    "candidate_strings_absent_from_final_dex": true
+  }
+}

@@ -6,6 +6,7 @@ import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 STUBS = {
+    'android/database/sqlite/SQLiteTransactionListener.java': 'package android.database.sqlite;public interface SQLiteTransactionListener{void onBegin();void onCommit();void onRollback();}',
     'android/content/Context.java': 'package android.content;public class Context{public Context getApplicationContext(){return this;}}',
     'android/os/UserHandle.java': 'package android.os;public class UserHandle{public int id;public UserHandle(int i){id=i;}}',
     'android/util/Log.java': 'package android.util;public class Log{public static int i(String t,String m){return 0;}public static int w(String t,String m){return 0;}public static int w(String t,String m,Throwable e){return 0;}}',

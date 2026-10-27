@@ -77,6 +77,14 @@ public final class QuickDesktopBackgroundCapture {
         }
     }
 
+    /** Recheck after scene update, before allocating and reading the framebuffer. */
+    public static boolean isGlCaptureCurrent(int requestGeneration) {
+        synchronized (REQUEST_LOCK) {
+            return requestGeneration != 0 && requestGeneration == generation
+                    && requestGeneration == pendingGeneration && pendingHost != null;
+        }
+    }
+
     /** Takes ownership of rawBitmap. Called from the launcher renderer thread. */
     public static void onGlFrame(final Bitmap rawBitmap, final int requestGeneration) {
         final QuickDesktopHostView host;
@@ -87,6 +95,9 @@ public final class QuickDesktopBackgroundCapture {
         }
         if (rawBitmap == null || host == null || requestGeneration != generation) {
             if (rawBitmap != null) rawBitmap.recycle();
+            if (host != null && requestGeneration == generation) {
+                notifyCaptureFailed(host, requestGeneration);
+            }
             Log.w(TAG, "QD_BACKGROUND_GL_CAPTURE_EMPTY");
             return;
         }
@@ -102,6 +113,7 @@ public final class QuickDesktopBackgroundCapture {
                 final Bitmap sharpBitmap = rawBitmap;
                 if (!hasVisibleContent(sharpBitmap)) {
                     sharpBitmap.recycle();
+                    notifyCaptureFailed(host, requestGeneration);
                     Log.w(TAG, "QD_BACKGROUND_GL_CAPTURE_REJECTED reason=blank");
                     return;
                 }
@@ -132,6 +144,17 @@ public final class QuickDesktopBackgroundCapture {
                         }
                     }
                 });
+            }
+        });
+    }
+
+    private static void notifyCaptureFailed(final QuickDesktopHostView host,
+                                            final int requestGeneration) {
+        MAIN.post(new Runnable() {
+            @Override public void run() {
+                if (requestGeneration == generation) {
+                    QuickDesktopController.onBackgroundFailed(host);
+                }
             }
         });
     }
@@ -167,16 +190,22 @@ public final class QuickDesktopBackgroundCapture {
         int[] pixels = new int[width * height];
         int[] scratch = new int[pixels.length];
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+        int diameter = radius * 2 + 1;
+        // Every channel sum is in [0, diameter * 255]. Share exact integer quotients
+        // across both directions and passes; the table belongs to this capture only.
+        int[] averages = new int[diameter * 255 + 1];
+        for (int value = 0; value < averages.length; value++) {
+            averages[value] = value / diameter;
+        }
         for (int pass = 0; pass < passes; pass++) {
-            blurHorizontal(pixels, scratch, width, height, radius);
-            blurVertical(scratch, pixels, width, height, radius);
+            blurHorizontal(pixels, scratch, width, height, radius, averages);
+            blurVertical(scratch, pixels, width, height, radius, averages);
         }
         bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
     }
 
     private static void blurHorizontal(int[] source, int[] target, int width, int height,
-                                       int radius) {
-        int diameter = radius * 2 + 1;
+                                       int radius, int[] averages) {
         for (int y = 0; y < height; y++) {
             int row = y * width;
             int a = 0, r = 0, g = 0, b = 0;
@@ -188,8 +217,8 @@ public final class QuickDesktopBackgroundCapture {
                 b += color & 0xff;
             }
             for (int x = 0; x < width; x++) {
-                target[row + x] = ((a / diameter) << 24) | ((r / diameter) << 16)
-                        | ((g / diameter) << 8) | (b / diameter);
+                target[row + x] = (averages[a] << 24) | (averages[r] << 16)
+                        | (averages[g] << 8) | averages[b];
                 int removed = source[row + clamp(x - radius, 0, width - 1)];
                 int added = source[row + clamp(x + radius + 1, 0, width - 1)];
                 a += (added >>> 24) - (removed >>> 24);
@@ -201,8 +230,7 @@ public final class QuickDesktopBackgroundCapture {
     }
 
     private static void blurVertical(int[] source, int[] target, int width, int height,
-                                     int radius) {
-        int diameter = radius * 2 + 1;
+                                     int radius, int[] averages) {
         for (int x = 0; x < width; x++) {
             int a = 0, r = 0, g = 0, b = 0;
             for (int offset = -radius; offset <= radius; offset++) {
@@ -213,8 +241,8 @@ public final class QuickDesktopBackgroundCapture {
                 b += color & 0xff;
             }
             for (int y = 0; y < height; y++) {
-                target[y * width + x] = ((a / diameter) << 24) | ((r / diameter) << 16)
-                        | ((g / diameter) << 8) | (b / diameter);
+                target[y * width + x] = (averages[a] << 24) | (averages[r] << 16)
+                        | (averages[g] << 8) | averages[b];
                 int removed = source[clamp(y - radius, 0, height - 1) * width + x];
                 int added = source[clamp(y + radius + 1, 0, height - 1) * width + x];
                 a += (added >>> 24) - (removed >>> 24);

@@ -24,6 +24,9 @@
 .method public run()V
     .locals 5
 
+    const-string v0, "LAUNCH_SCENE_TASK_BEGIN"
+    invoke-static {v0}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+
     .line 1
     invoke-static {}, Ljava/lang/System;->currentTimeMillis()J
 
@@ -81,6 +84,9 @@
     .line 5
     invoke-virtual {v0}, Lcom/smartisanos/launcher/view/Eb;->Vh()V
 
+    const-string v0, "LAUNCH_SCENE_BIND_END"
+    invoke-static {v0}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+
     .line 6
     sget-boolean v0, Lcom/smartisanos/launcher/va;->DBG:Z
 
@@ -127,6 +133,9 @@
 
     .line 10
     invoke-virtual {v0, p0}, Lcom/smartisanos/smengine/n;->q(F)V
+
+    const-string v0, "LAUNCH_SCENE_COMPLETION_ENQUEUED"
+    invoke-static {v0}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     .line 11
     sget-boolean p0, Lcom/smartisanos/launcher/data/Constants;->ENABLE_LARGE_SCREEN_MODE:Z

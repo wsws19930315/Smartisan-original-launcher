@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:setting="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/background" android:fitsSystemWindows="true">
+    <com.smartisanos.home.widget.sys.Title android:id="@+id/view_title"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_alignParentTop="true" setting:title_titlex="@string/default_home_page_title" />
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent"
+        android:layout_below="@id/view_title" android:overScrollMode="always">
+        <LinearLayout android:orientation="vertical" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:paddingTop="@dimen/setting_item_top">
+            <RelativeLayout android:id="@+id/default_home_primary"
+                android:layout_width="match_parent" android:layout_height="72dp"
+                android:background="@drawable/selector_setting_sub_item_bg_single">
+                <TextView style="@style/SmartisanSettingsRowTitle"
+                    android:layout_toLeftOf="@id/default_home_status" android:singleLine="true"
+                    android:ellipsize="end" android:text="@string/default_home_row_title" />
+                <TextView android:id="@+id/default_home_status" style="@style/SmartisanSettingsRowValue"
+                    android:layout_width="wrap_content" android:singleLine="true"
+                    android:layout_toLeftOf="@id/default_home_arrow" />
+                <ImageView android:id="@+id/default_home_arrow" style="@style/SmartisanSettingsRowArrow" />
+            </RelativeLayout>
+            <RelativeLayout android:id="@+id/default_home_recheck"
+                android:layout_width="match_parent" android:layout_height="72dp"
+                android:background="@drawable/setting_item_down" android:visibility="gone">
+                <TextView style="@style/SmartisanSettingsRowTitle"
+                    android:layout_toLeftOf="@id/default_home_recheck_arrow"
+                    android:singleLine="true" android:ellipsize="end"
+                    android:text="@string/default_home_recheck_title" />
+                <ImageView android:id="@+id/default_home_recheck_arrow" style="@style/SmartisanSettingsRowArrow" />
+            </RelativeLayout>
+            <com.smartisanos.home.widget.sys.TipsView android:id="@+id/default_home_instructions"
+                style="@style/SettingItemTipsStyle" />
+            <TextView android:id="@+id/default_home_tips_title" style="@style/SettingItemTitleStyle"
+                android:text="@string/default_home_tips_title" />
+            <com.smartisanos.home.widget.sys.TipsView android:id="@+id/default_home_tips"
+                style="@style/SettingItemTipsStyle" />
+        </LinearLayout>
+    </ScrollView>
+</RelativeLayout>

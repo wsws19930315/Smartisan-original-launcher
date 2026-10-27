@@ -157,6 +157,22 @@
 
     move-result-object v0
 
+    if-eqz v0, :cond_settings_label_done
+
+    iget-object v1, v0, Lcom/smartisanos/launcher/data/ItemInfo;->packageName:Ljava/lang/String;
+
+    iget-object v2, v0, Lcom/smartisanos/launcher/data/ItemInfo;->componentName:Ljava/lang/String;
+
+    iget-object v3, v0, Lcom/smartisanos/launcher/data/ItemInfo;->title:Ljava/lang/String;
+
+    invoke-static {v1, v2, v3}, Lcom/smartisanos/launcher/theme/MaintainedLauncherSettingsHost;->localizedDesktopSettingsItemLabel(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v1
+
+    iput-object v1, v0, Lcom/smartisanos/launcher/data/ItemInfo;->title:Ljava/lang/String;
+
+    :cond_settings_label_done
+
     return-object v0
 
     :cond_1
@@ -530,6 +546,12 @@
 
     .line 64
     iput-object v6, v0, Lcom/smartisanos/launcher/data/ItemInfo;->componentName:Ljava/lang/String;
+
+    invoke-static {v5, v6, v4}, Lcom/smartisanos/launcher/theme/MaintainedLauncherSettingsHost;->localizedDesktopSettingsItemLabel(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v4
+
+    iput-object v4, v0, Lcom/smartisanos/launcher/data/ItemInfo;->title:Ljava/lang/String;
 
     .line 65
     iput v7, v0, Lcom/smartisanos/launcher/data/ItemInfo;->pageIndex:I

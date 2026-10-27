@@ -62,6 +62,8 @@ public final class SearchIconBackend {
     private static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
     private static final HashMap<String, ArrayList<IconRequest>> PENDING =
             new HashMap<String, ArrayList<IconRequest>>();
+    // Snapshot-scoped identity metadata only; never retain model clones or icon blobs here.
+    private static final HashMap<String, Long> MODEL_IDS = new HashMap<String, Long>();
 
     private static final ExecutorService EXECUTOR =
             Executors.newSingleThreadExecutor(new ThreadFactory() {
@@ -169,7 +171,7 @@ public final class SearchIconBackend {
         }
     }
 
-    /** Decodes one encoded cache hit on the icon worker and coalesces identical requests. */
+    /** Loads visible cache misses on the same worker and coalesces identical requests. */
     public static IconRequest requestDecoded(Context context, final SearchEntry entry,
             IconCallback callback) {
         if (context == null || entry == null || callback == null) return null;
@@ -182,8 +184,6 @@ public final class SearchIconBackend {
             postResult(request, ready);
             return request;
         }
-        final byte[] encoded = getEncoded(entry);
-        if (encoded == null || encoded.length == 0) return null;
         boolean startDecode = false;
         final ArrayList<IconRequest> decodingRequests;
         synchronized (CACHE_LOCK) {
@@ -201,7 +201,12 @@ public final class SearchIconBackend {
             EXECUTOR.execute(new Runnable() {
                 @Override
                 public void run() {
-                    Bitmap bitmap = decodeTarget(encoded, targetPx);
+                    Bitmap bitmap = null;
+                    try {
+                        bitmap = loadVisibleIcon(entry, null, targetPx);
+                    } catch (Exception error) {
+                        Log.i(TAG, "QS_ICON_LOAD_FAILED type=" + error.getClass().getName());
+                    }
                     ArrayList<IconRequest> requests;
                     synchronized (CACHE_LOCK) {
                         // An invalidated decode must not consume a newer request for the same key.
@@ -211,6 +216,7 @@ public final class SearchIconBackend {
                                 && generation == SOURCE_GENERATION.get()) {
                             putDecoded(entry, bitmap, decodedLimitBytes(targetPx));
                         } else {
+                            if (bitmap != null) bitmap.recycle();
                             bitmap = null;
                         }
                     }
@@ -261,6 +267,7 @@ public final class SearchIconBackend {
             HYDRATION_CALLBACKS.clear();
             hydrationInFlight = false;
             ENCODED.clear();
+            MODEL_IDS.clear();
             encodedBytes = 0L;
             recycleDecodedLocked();
             for (ArrayList<IconRequest> requests : PENDING.values()) {
@@ -281,7 +288,6 @@ public final class SearchIconBackend {
         long pssBeforeKb = Debug.getPss();
         int alreadyReady = 0;
         int dbLoaded = 0;
-        int fallbackLoaded = 0;
         int misses = 0;
         long totalSourceBytes = 0L;
         Log.i(TAG, "QS_ICON_HYDRATE_BEGIN entries=" + snapshot.entries.size()
@@ -289,6 +295,15 @@ public final class SearchIconBackend {
         try {
             Map model = launcherModelSnapshot();
             Map<String, ModelValue> byIdentity = indexModel(model);
+            synchronized (CACHE_LOCK) {
+                if (schedule != SCHEDULE_VERSION.get()) return;
+                MODEL_IDS.clear();
+                for (Map.Entry<String, ModelValue> value : byIdentity.entrySet()) {
+                    Object id = value.getValue().item.getClass().getField("id")
+                            .get(value.getValue().item);
+                    if (id instanceof Number) MODEL_IDS.put(value.getKey(), ((Number) id).longValue());
+                }
+            }
             ArrayList<WarmCandidate> warm = new ArrayList<WarmCandidate>();
             for (SearchEntry entry : snapshot.entries) {
                 if (schedule != SCHEDULE_VERSION.get()) return;
@@ -299,6 +314,7 @@ public final class SearchIconBackend {
                         misses++;
                         continue;
                     }
+                    warm.add(new WarmCandidate(entry, modelValue.item));
                     boolean ready = hasIconData(modelValue.item);
                     byte[] bytes = invokeIconData(modelValue.item);
                     if (bytes == null || bytes.length == 0) {
@@ -312,7 +328,6 @@ public final class SearchIconBackend {
                         if (schedule != SCHEDULE_VERSION.get()) return;
                         putEncoded(entry, bytes, encodedLimitBytes());
                     }
-                    warm.add(new WarmCandidate(entry, modelValue.usageCount));
                 } catch (Throwable ignored) {
                     misses++;
                 }
@@ -321,7 +336,6 @@ public final class SearchIconBackend {
             Log.i(TAG, "QS_ICON_HYDRATE_END entries=" + snapshot.entries.size()
                     + " alreadyReady=" + alreadyReady
                     + " dbLoaded=" + dbLoaded
-                    + " fallbackLoaded=" + fallbackLoaded
                     + " misses=" + misses
                     + " encodedBytes=" + totalSourceBytes
                     + " cacheBytes=" + currentEncodedBytes()
@@ -376,6 +390,7 @@ public final class SearchIconBackend {
         ArrayList<WarmCandidate> selected = new ArrayList<WarmCandidate>();
         HashSet<String> seenPackages = new HashSet<String>();
         for (WarmCandidate candidate : candidates) {
+            if (candidate.entry.shortcutId != null && candidate.entry.shortcutId.length() > 0) continue;
             if (seenPackages.add(candidate.entry.packageName)) {
                 selected.add(candidate);
                 if (selected.size() == 5) break;
@@ -392,8 +407,12 @@ public final class SearchIconBackend {
         for (int i = 0; i < requested; i++) {
             if (schedule != SCHEDULE_VERSION.get()) return;
             SearchEntry entry = selected.get(i).entry;
-            byte[] encoded = getEncoded(entry);
-            Bitmap bitmap = decodeTarget(encoded, targetPx);
+            Bitmap bitmap = null;
+            try {
+                bitmap = loadVisibleIcon(entry, selected.get(i).item, targetPx);
+            } catch (Exception error) {
+                Log.i(TAG, "QS_ICON_LOAD_FAILED type=" + error.getClass().getName());
+            }
             if (bitmap == null) {
                 failed++;
                 continue;
@@ -477,6 +496,41 @@ public final class SearchIconBackend {
         field.setAccessible(true);
         Object value = field.get(item);
         return value instanceof byte[] && ((byte[]) value).length > 0;
+    }
+
+    /** Targeted model lookup on cache miss; no per-row full model/PM scan. */
+    private static Bitmap loadVisibleIcon(SearchEntry entry, Object clone, int targetPx)
+            throws Exception {
+        Bitmap bitmap = decodeTarget(getEncoded(entry), targetPx);
+        if (bitmap != null) return bitmap;
+        if (clone == null) {
+            Long id;
+            synchronized (CACHE_LOCK) {
+                id = MODEL_IDS.get(modelKey(entry.packageName, entry.className, entry.userId));
+            }
+            if (id == null) return null;
+            Object current = Class.forName("com.smartisanos.launcher.Aa")
+                    .getMethod("i", long.class).invoke(null, id.longValue());
+            if (current == null) return null;
+            clone = current.getClass().getMethod("clone").invoke(current);
+        }
+        int user = intField(clone, "userId");
+        if (user < 0) user = Process.myUid() / 100000;
+        if (user != entry.userId || !entry.packageName.equals(stringField(clone, "packageName"))
+                || !entry.className.equals(stringField(clone, "componentName"))) return null;
+        bitmap = decodeTarget(invokeIconData(clone), targetPx);
+        if (bitmap != null) return bitmap;
+        // Startup may deliberately defer the legacy PNG. Reuse the desktop final composer,
+        // including selected source, profile, circle and shadow; never display RAW artwork.
+        Bitmap composed = (Bitmap) Class.forName(
+                "com.smartisanos.launcher.theme.IconRasterDiagnostics")
+                .getMethod("composeStaticApplicationIconTexture", Object.class, Bitmap.class)
+                .invoke(null, clone, null);
+        if (composed == null) return null;
+        Log.i(TAG, "QS_ICON_SOURCE_RECOVERED iconKey=" + entry.iconKey);
+        Bitmap target = Bitmap.createScaledBitmap(composed, targetPx, targetPx, true);
+        if (target != composed) composed.recycle();
+        return target;
     }
 
     private static byte[] invokeIconData(Object item) throws Exception {
@@ -565,6 +619,12 @@ public final class SearchIconBackend {
     }
 
     private static void removePackageLocked(String packageName, int userId) {
+        Iterator<String> modelIterator = MODEL_IDS.keySet().iterator();
+        while (modelIterator.hasNext()) {
+            String key = modelIterator.next();
+            if (key.startsWith(packageName + '\t')
+                    && (userId < 0 || key.endsWith("\t" + userId))) modelIterator.remove();
+        }
         Iterator<Map.Entry<String, ArrayList<IconRequest>>> pendingIterator =
                 PENDING.entrySet().iterator();
         while (pendingIterator.hasNext()) {
@@ -649,11 +709,11 @@ public final class SearchIconBackend {
 
     private static final class WarmCandidate {
         final SearchEntry entry;
-        final int usageCount;
+        final Object item;
 
-        WarmCandidate(SearchEntry entry, int usageCount) {
+        WarmCandidate(SearchEntry entry, Object item) {
             this.entry = entry;
-            this.usageCount = usageCount;
+            this.item = item;
         }
     }
 

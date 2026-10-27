@@ -1,0 +1,716 @@
+{
+  "scope": "home-main main; Android16 emulator-5554 only; no new physical-phone validation",
+  "final_apk_sha256": "6C8E357488FCF9DEADDA1481C6BB563F6356521D0D3A83BFFEC7C271B69AEE44",
+  "tests": {
+    "actual_owner_assertions": 47,
+    "build": true,
+    "signature": true,
+    "zipalign_16k": true,
+    "main_config_changes": "0x80003fff",
+    "smengine_changed": false,
+    "wallpaper_receiver_changed": false,
+    "installed_apk_hash_matches": true,
+    "cleanup": {
+      "theme": "smartisan_theme_black",
+      "custom_test_wallpaper_cleared": true,
+      "temporary_trans_theme_removed": true,
+      "uploaded_test_image_removed": true,
+      "physical_devices_untouched": true
+    },
+    "final_default_restore": {
+      "pid_before": "28444",
+      "pid_after": "28444",
+      "theme_wallpaper_id": 20,
+      "default_restore": "already_current; original notifications posted on MAIN",
+      "restored_black_wallpaper_id": 21
+    }
+  },
+  "timelines": {
+    "before-background-sync": {
+      "evidence_path": "build\\home-background-sync-20261013\\before-background-sync",
+      "sessions": [
+        {
+          "resume_end_ms": 35.138,
+          "surface_create_ms": 105.4,
+          "first_visible_buffer_sample_ms": 507.97
+        },
+        {
+          "resume_end_ms": 3.203,
+          "surface_create_ms": 66.434,
+          "first_visible_buffer_sample_ms": 383.784
+        },
+        {
+          "resume_end_ms": 6.333,
+          "surface_create_ms": 97.755,
+          "first_visible_buffer_sample_ms": 422.632
+        }
+      ],
+      "sample_states": {
+        "serial": "emulator-5554",
+        "sdk": 36,
+        "wm": "Physical size: 1440x3120\nOverride size: 1080x2400\n",
+        "method": "gesture",
+        "navigation_mode": "2",
+        "previous_settings": {
+          "launcher_home_diagnostics_enabled": "null",
+          "launcher_home_surface_attachment_experiment": "null",
+          "launcher_home_opaque_wallpaper_experiment": "null"
+        },
+        "attachment": false,
+        "opaque_wallpaper_off": false,
+        "window_trace": true,
+        "host_layer": "surface",
+        "samples": [
+          {
+            "label": "before",
+            "host_monotonic": 49294.4326212,
+            "pid": "15214",
+            "top": [
+              "topResumedActivity=ActivityRecord{136300880 u0 com.smartisanos.launcher/.Launcher t112}",
+              "Resumed: ActivityRecord{136300880 u0 com.smartisanos.launcher/.Launcher t112}",
+              "ResumedActivity: ActivityRecord{136300880 u0 com.smartisanos.launcher/.Launcher t112}"
+            ],
+            "layers": [
+              "RequestedLayerState{c1b7949 SurfaceView[smt_launcher]#1776 parentId=1775 relativeParentId=1772 z=-2}",
+              "RequestedLayerState{Bounds for - smt_launcher#1775 parentId=1772}",
+              "RequestedLayerState{c1b7949 SurfaceView[smt_launcher](BLAST)#1777 parentId=1776}",
+              "RequestedLayerState{smt_launcher#1772 parentId=1593}",
+              "RequestedLayerState{Background for c1b7949 SurfaceView[smt_launcher]#1778 parentId=1776 relativeParentId=1772 z=-2147483648}",
+              "RequestedLayerState{cfdad2f smt_launcher#1593 parentId=1587}"
+            ]
+          },
+          {
+            "label": "return-0",
+            "host_monotonic": 49301.0116469,
+            "pid": "15214",
+            "top": [
+              "topResumedActivity=ActivityRecord{136300880 u0 com.smartisanos.launcher/.Launcher t112}",
+              "Resumed: ActivityRecord{136300880 u0 com.smartisanos.launcher/.Launcher t112}",
+              "ResumedActivity: ActivityRecord{136300880 u0 com.smartisanos.launcher/.Launcher t112}"
+            ],
+            "layers": [
+              "RequestedLayerState{Background for c1b7949 SurfaceView[smt_launcher]#1804 parentId=1802 relativeParentId=1798 z=-2147483648}",
+              "RequestedLayerState{c1b7949 SurfaceView[smt_launcher](BLAST)#1803 parentId=1802}",
+              "RequestedLayerState{cfdad2f smt_launcher#1593 parentId=1587}",
+              "RequestedLayerState{smt_launcher#1798 parentId=1593}",
+              "RequestedLayerState{Bounds for - smt_launcher#1801 parentId=1798}",
+              "RequestedLayerState{c1b7949 SurfaceView[smt_launcher]#1802 parentId=1801 relativeParentId=1798 z=-2}"
+            ]
+          },
+          {
+            "label": "return-1",
+            "host_monotonic": 49304.6902145,
+            "pid": "15214",
+            "top": [
+              "topResumedActivity=ActivityRecord{136300880 u0 com.smartisanos.launcher/.Launcher t112}",
+              "Resumed: ActivityRecord{136300880 u0 com.smartisanos.launcher/.Launcher t112}",
+              "ResumedActivity: ActivityRecord{136300880 u0 com.smartisanos.launcher/.Launcher t112}"
+            ],
+            "layers": [
+              "RequestedLayerState{Background for c1b7949 SurfaceView[smt_launcher]#1828 parentId=1826 relativeParentId=1822 z=-2147483648}",
+              "RequestedLayerState{cfdad2f smt_launcher#1593 parentId=1587}",
+              "RequestedLayerState{c1b7949 SurfaceView[smt_launcher](BLAST)#1827 parentId=1826}",
+              "RequestedLayerState{c1b7949 SurfaceView[smt_launcher]#1826 parentId=1825 relativeParentId=1822 z=-2}",
+              "RequestedLayerState{Bounds for - smt_launcher#1825 parentId=1822}",
+              "RequestedLayerState{smt_launcher#1822 parentId=1593}"
+            ]
+          },
+          {
+            "label": "return-2",
+            "host_monotonic": 49308.3391306,
+            "pid": "15214",
+            "top": [
+              "topResumedActivity=ActivityRecord{136300880 u0 com.smartisanos.launcher/.Launcher t112}",
+              "Resumed: ActivityRecord{136300880 u0 com.smartisanos.launcher/.Launcher t112}",
+              "ResumedActivity: ActivityRecord{136300880 u0 com.smartisanos.launcher/.Launcher t112}"
+            ],
+            "layers": [
+              "RequestedLayerState{Background for c1b7949 SurfaceView[smt_launcher]#1852 parentId=1850 relativeParentId=1846 z=-2147483648}",
+              "RequestedLayerState{cfdad2f smt_launcher#1593 parentId=1587}",
+              "RequestedLayerState{c1b7949 SurfaceView[smt_launcher](BLAST)#1851 parentId=1850}",
+              "RequestedLayerState{c1b7949 SurfaceView[smt_launcher]#1850 parentId=1849 relativeParentId=1846 z=-2}",
+              "RequestedLayerState{Bounds for - smt_launcher#1849 parentId=1846}",
+              "RequestedLayerState{smt_launcher#1846 parentId=1593}"
+            ]
+          }
+        ],
+        "settle_seconds": 2.0,
+        "gesture_duration_ms": 100,
+        "keyguard": [
+          "showing=false",
+          "inputRestricted=false"
+        ],
+        "actions": [
+          {
+            "round": 0,
+            "host_monotonic": 49298.5817914
+          },
+          {
+            "round": 1,
+            "host_monotonic": 49302.1068561
+          },
+          {
+            "round": 2,
+            "host_monotonic": 49305.8478564
+          }
+        ],
+        "memory": "Applications Memory Usage (in Kilobytes):\nUptime: 33245419 Realtime: 33245419\n\n** MEMINFO in pid 15214 [com.smartisanos.launcher] **\n                   Pss  Private  Private     Swap      Rss     Heap     Heap     Heap\n                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free\n                ------   ------   ------   ------   ------   ------   ------   ------\n  Native Heap    18854    18816        0        0    22548    40416    23990    12742\n  Dalvik Heap    14462    14360        0        0    21964    27962    13981    13981\n Dalvik Other     1570     1416        0        0     2532                           \n        Stack      724      724        0        0      728                           \n       Ashmem        9        0        0        0      740                           \n    Other dev      136        0      136        0      440                           \n     .so mmap     1655      308        8        0    46396                           \n    .jar mmap     1225        0        0        0    41564                           \n    .apk mmap     1017        8      624        0     3368                           \n    .ttf mmap       38        0        0        0      384                           \n    .dex mmap     2324        0        0        0     5548                           \n    .oat mmap      315        0        0        0    12156                           \n    .art mmap     1138      708        0        0    32884                           \n   Other mmap     1010        4      320        0     4424                           \n      Unknown      636      628        0        0     2120                           \n        TOTAL    45113    36972     1088        0   197796    68378    37971    26723\n \n App Summary\n                       Pss(KB)                        Rss(KB)\n                        ------                         ------\n           Java Heap:    15068                          54848\n         Native Heap:    18816                          22548\n                Code:      964                         109728\n               Stack:      724                            728\n            Graphics:        0                              0\n       Private Other:     2488\n              System:     7053\n             Unknown:                                    9944\n \n           TOTAL PSS:    45113            TOTAL RSS:   197796      TOTAL SWAP (KB):        0\n \n Objects\n               Views:       11         ViewRootImpl:        1\n         AppContexts:        5           Activities:        1\n              Assets:       24        AssetManagers:        0\n       Local Binders:       58        Proxy Binders:       68\n       Parcel memory:       13         Parcel count:       51\n    Death Recipients:        0             WebViews:        0\n \n Native Allocations\n                         Count                       Total(kB)\n                        ------                         ------\n   Bitmap (malloced):       12                            298\n    Other (malloced):      352                             32\n Other (nonmalloced):      133                             87\n \n SQL\n         MEMORY_USED:      998\n  PAGECACHE_OVERFLOW:      908          MALLOC_SIZE:       77\n \n DATABASES\n      pgsz     dbsz   Lookaside(b) cache hits cache misses cache size  Dbname\nPER CONNECTION STATS\n         4     1652            121   111   112    25  /data/user/0/com.smartisanos.launcher/databases/launcher.db\nPOOL STATS\n     cache hits  cache misses    cache size  Dbname\n            111           113            25  /data/user/0/com.smartisanos.launcher/databases/launcher.db\n \n",
+        "process_stat": "15214"
+      },
+      "apk_sha256": "see archived sample APK revision"
+    },
+    "after-background-sync-black": {
+      "evidence_path": "build\\home-background-sync-20261013\\after-background-sync-black",
+      "sessions": [
+        {
+          "resume_end_ms": 38.949,
+          "surface_create_ms": 77.396,
+          "first_visible_buffer_sample_ms": 562.866
+        },
+        {
+          "resume_end_ms": 10.967,
+          "surface_create_ms": 57.293,
+          "first_visible_buffer_sample_ms": 561.492
+        },
+        {
+          "resume_end_ms": 70.299,
+          "surface_create_ms": 111.92,
+          "first_visible_buffer_sample_ms": 523.557
+        }
+      ],
+      "sample_states": {
+        "serial": "emulator-5554",
+        "sdk": 36,
+        "wm": "Physical size: 1440x3120\nOverride size: 1080x2400\n",
+        "method": "gesture",
+        "navigation_mode": "2",
+        "previous_settings": {
+          "launcher_home_diagnostics_enabled": "null",
+          "launcher_home_surface_attachment_experiment": "null",
+          "launcher_home_opaque_wallpaper_experiment": "null"
+        },
+        "attachment": false,
+        "opaque_wallpaper_off": false,
+        "window_trace": true,
+        "host_layer": "surface",
+        "samples": [
+          {
+            "label": "before",
+            "host_monotonic": 49699.6294986,
+            "pid": "18794",
+            "top": [
+              "topResumedActivity=ActivityRecord{226949133 u0 com.smartisanos.launcher/.Launcher t115}",
+              "Resumed: ActivityRecord{226949133 u0 com.smartisanos.launcher/.Launcher t115}",
+              "ResumedActivity: ActivityRecord{226949133 u0 com.smartisanos.launcher/.Launcher t115}"
+            ],
+            "layers": [
+              "RequestedLayerState{Bounds for - smt_launcher#1921 parentId=1920}",
+              "RequestedLayerState{ce9255a smt_launcher#1917 parentId=1883}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher]#1922 parentId=1921 relativeParentId=1920 z=-2}",
+              "RequestedLayerState{smt_launcher#1920 parentId=1917}",
+              "RequestedLayerState{Background for 46b7802 SurfaceView[smt_launcher]#1924 parentId=1922 relativeParentId=1920 z=-2147483648}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher](BLAST)#1923 parentId=1922}"
+            ]
+          },
+          {
+            "label": "return-0",
+            "host_monotonic": 49706.5758733,
+            "pid": "18794",
+            "top": [
+              "topResumedActivity=ActivityRecord{226949133 u0 com.smartisanos.launcher/.Launcher t115}",
+              "Resumed: ActivityRecord{226949133 u0 com.smartisanos.launcher/.Launcher t115}",
+              "ResumedActivity: ActivityRecord{226949133 u0 com.smartisanos.launcher/.Launcher t115}"
+            ],
+            "layers": [
+              "RequestedLayerState{ce9255a smt_launcher#1917 parentId=1883}",
+              "RequestedLayerState{Background for 46b7802 SurfaceView[smt_launcher]#1955 parentId=1953 relativeParentId=1949 z=-2147483648}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher](BLAST)#1954 parentId=1953}",
+              "RequestedLayerState{smt_launcher#1949 parentId=1917}",
+              "RequestedLayerState{Bounds for - smt_launcher#1952 parentId=1949}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher]#1953 parentId=1952 relativeParentId=1949 z=-2}"
+            ]
+          },
+          {
+            "label": "return-1",
+            "host_monotonic": 49709.994913,
+            "pid": "18794",
+            "top": [
+              "topResumedActivity=ActivityRecord{226949133 u0 com.smartisanos.launcher/.Launcher t115}",
+              "Resumed: ActivityRecord{226949133 u0 com.smartisanos.launcher/.Launcher t115}",
+              "ResumedActivity: ActivityRecord{226949133 u0 com.smartisanos.launcher/.Launcher t115}"
+            ],
+            "layers": [
+              "RequestedLayerState{ce9255a smt_launcher#1917 parentId=1883}",
+              "RequestedLayerState{Background for 46b7802 SurfaceView[smt_launcher]#1979 parentId=1977 relativeParentId=1973 z=-2147483648}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher]#1977 parentId=1976 relativeParentId=1973 z=-2}",
+              "RequestedLayerState{Bounds for - smt_launcher#1976 parentId=1973}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher](BLAST)#1978 parentId=1977}",
+              "RequestedLayerState{smt_launcher#1973 parentId=1917}"
+            ]
+          },
+          {
+            "label": "return-2",
+            "host_monotonic": 49713.465512,
+            "pid": "18794",
+            "top": [
+              "topResumedActivity=ActivityRecord{226949133 u0 com.smartisanos.launcher/.Launcher t115}",
+              "Resumed: ActivityRecord{226949133 u0 com.smartisanos.launcher/.Launcher t115}",
+              "ResumedActivity: ActivityRecord{226949133 u0 com.smartisanos.launcher/.Launcher t115}"
+            ],
+            "layers": [
+              "RequestedLayerState{ce9255a smt_launcher#1917 parentId=1883}",
+              "RequestedLayerState{Background for 46b7802 SurfaceView[smt_launcher]#2003 parentId=2001 relativeParentId=1997 z=-2147483648}",
+              "RequestedLayerState{Bounds for - smt_launcher#2000 parentId=1997}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher](BLAST)#2002 parentId=2001}",
+              "RequestedLayerState{46b7802 SurfaceView[smt_launcher]#2001 parentId=2000 relativeParentId=1997 z=-2}",
+              "RequestedLayerState{smt_launcher#1997 parentId=1917}"
+            ]
+          }
+        ],
+        "settle_seconds": 2.0,
+        "gesture_duration_ms": 100,
+        "keyguard": [
+          "showing=false",
+          "inputRestricted=false"
+        ],
+        "actions": [
+          {
+            "round": 0,
+            "host_monotonic": 49704.1398253
+          },
+          {
+            "round": 1,
+            "host_monotonic": 49707.6015735
+          },
+          {
+            "round": 2,
+            "host_monotonic": 49711.0615984
+          }
+        ],
+        "memory": "Applications Memory Usage (in Kilobytes):\nUptime: 33650397 Realtime: 33650400\n\n** MEMINFO in pid 18794 [com.smartisanos.launcher] **\n                   Pss  Private  Private     Swap      Rss     Heap     Heap     Heap\n                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free\n                ------   ------   ------   ------   ------   ------   ------   ------\n  Native Heap    24341    24304        0        0    28020    40672    23870    13308\n  Dalvik Heap    17236    17132        0        0    24732    35182    17591    17591\n Dalvik Other     1190     1068        0        0     2120                           \n        Stack      708      708        0        0      712                           \n       Ashmem        9        0        0        0      732                           \n    Other dev      196        0      196        0      500                           \n     .so mmap     1658      308        8        0    46348                           \n    .jar mmap     1191        0        0        0    40804                           \n    .apk mmap     1327        8      928        0     3684                           \n    .ttf mmap       36        0        0        0      384                           \n    .dex mmap     2295        0        0        0     5488                           \n    .oat mmap      324        0        0        0    12348                           \n    .art mmap     1663     1224        4        0    33416                           \n   Other mmap      999        4      320        0     4416                           \n      Unknown      656      648        0        0     2136                           \n        TOTAL    53829    45404     1456        0   205840    75854    41461    30899\n \n App Summary\n                       Pss(KB)                        Rss(KB)\n                        ------                         ------\n           Java Heap:    18360                          58148\n         Native Heap:    24304                          28020\n                Code:     1252                         109288\n               Stack:      708                            712\n            Graphics:        0                              0\n       Private Other:     2236\n              System:     6969\n             Unknown:                                    9672\n \n           TOTAL PSS:    53829            TOTAL RSS:   205840      TOTAL SWAP (KB):        0\n \n Objects\n               Views:       11         ViewRootImpl:        1\n         AppContexts:        5           Activities:        1\n              Assets:       27        AssetManagers:        0\n       Local Binders:       57        Proxy Binders:       72\n       Parcel memory:       19         Parcel count:       55\n    Death Recipients:        0             WebViews:        0\n \n Native Allocations\n                         Count                       Total(kB)\n                        ------                         ------\n    Other (malloced):      364                             33\n Other (nonmalloced):      207                            127\n   Bitmap (malloced):       12                            298\n \n SQL\n         MEMORY_USED:      994\n  PAGECACHE_OVERFLOW:      908          MALLOC_SIZE:       77\n \n DATABASES\n      pgsz     dbsz   Lookaside(b) cache hits cache misses cache size  Dbname\nPER CONNECTION STATS\n         4     1652            108   104   111    25  /data/user/0/com.smartisanos.launcher/databases/launcher.db\nPOOL STATS\n     cache hits  cache misses    cache size  Dbname\n            104           112            25  /data/user/0/com.smartisanos.launcher/databases/launcher.db\n \n",
+        "process_stat": "18794"
+      },
+      "apk_sha256": "see archived sample APK revision"
+    },
+    "final-black-gesture": {
+      "evidence_path": "build\\home-background-sync-20261013\\final-black-gesture",
+      "sessions": [
+        {
+          "resume_end_ms": 34.9,
+          "surface_create_ms": 98.82,
+          "first_visible_buffer_sample_ms": 721.56
+        },
+        {
+          "resume_end_ms": 6.662,
+          "surface_create_ms": 38.834,
+          "first_visible_buffer_sample_ms": 692.398
+        },
+        {
+          "resume_end_ms": 4.122,
+          "surface_create_ms": 85.637,
+          "first_visible_buffer_sample_ms": 945.739
+        }
+      ],
+      "sample_states": {
+        "serial": "emulator-5554",
+        "sdk": 36,
+        "wm": "Physical size: 1440x3120\nOverride size: 1080x2400\n",
+        "method": "gesture",
+        "navigation_mode": "2",
+        "previous_settings": {
+          "launcher_home_diagnostics_enabled": "null",
+          "launcher_home_surface_attachment_experiment": "null",
+          "launcher_home_opaque_wallpaper_experiment": "null"
+        },
+        "attachment": false,
+        "opaque_wallpaper_off": false,
+        "window_trace": true,
+        "host_layer": "surface",
+        "samples": [
+          {
+            "label": "before",
+            "host_monotonic": 54080.8559629,
+            "pid": "25438",
+            "top": [
+              "topResumedActivity=ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "Resumed: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "ResumedActivity: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}"
+            ],
+            "layers": [
+              "RequestedLayerState{smt_launcher#3069 parentId=3067}",
+              "RequestedLayerState{Bounds for - smt_launcher#3070 parentId=3069}",
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher](BLAST)#3072 parentId=3071}",
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher]#3071 parentId=3070 relativeParentId=3069 z=-2}",
+              "RequestedLayerState{7b039d1 smt_launcher#3067 parentId=2889}",
+              "RequestedLayerState{Background for 43c055a SurfaceView[smt_launcher]#3073 parentId=3071 relativeParentId=3069 z=-2147483648}"
+            ]
+          },
+          {
+            "label": "return-0",
+            "host_monotonic": 54087.7635893,
+            "pid": "25438",
+            "top": [
+              "topResumedActivity=ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "Resumed: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "ResumedActivity: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}"
+            ],
+            "layers": [
+              "RequestedLayerState{Background for 43c055a SurfaceView[smt_launcher]#3106 parentId=3104 relativeParentId=3100 z=-2147483648}",
+              "RequestedLayerState{7b039d1 smt_launcher#3067 parentId=2889}",
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher](BLAST)#3105 parentId=3104}",
+              "RequestedLayerState{smt_launcher#3100 parentId=3067}",
+              "RequestedLayerState{Bounds for - smt_launcher#3103 parentId=3100}",
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher]#3104 parentId=3103 relativeParentId=3100 z=-2}"
+            ]
+          },
+          {
+            "label": "return-1",
+            "host_monotonic": 54091.3023968,
+            "pid": "25438",
+            "top": [
+              "topResumedActivity=ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "Resumed: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "ResumedActivity: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}"
+            ],
+            "layers": [
+              "RequestedLayerState{Background for 43c055a SurfaceView[smt_launcher]#3130 parentId=3128 relativeParentId=3124 z=-2147483648}",
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher](BLAST)#3129 parentId=3128}",
+              "RequestedLayerState{7b039d1 smt_launcher#3067 parentId=2889}",
+              "RequestedLayerState{smt_launcher#3124 parentId=3067}",
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher]#3128 parentId=3127 relativeParentId=3124 z=-2}",
+              "RequestedLayerState{Bounds for - smt_launcher#3127 parentId=3124}"
+            ]
+          },
+          {
+            "label": "return-2",
+            "host_monotonic": 54094.9100171,
+            "pid": "25438",
+            "top": [
+              "topResumedActivity=ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "Resumed: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "ResumedActivity: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}"
+            ],
+            "layers": [
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher]#3152 parentId=3151 relativeParentId=3148 z=-2}",
+              "RequestedLayerState{7b039d1 smt_launcher#3067 parentId=2889}",
+              "RequestedLayerState{Bounds for - smt_launcher#3151 parentId=3148}",
+              "RequestedLayerState{smt_launcher#3148 parentId=3067}",
+              "RequestedLayerState{Background for 43c055a SurfaceView[smt_launcher]#3154 parentId=3152 relativeParentId=3148 z=-2147483648}",
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher](BLAST)#3153 parentId=3152}"
+            ]
+          }
+        ],
+        "settle_seconds": 2.0,
+        "gesture_duration_ms": 100,
+        "keyguard": [
+          "showing=false",
+          "inputRestricted=false"
+        ],
+        "actions": [
+          {
+            "round": 0,
+            "host_monotonic": 54085.305025
+          },
+          {
+            "round": 1,
+            "host_monotonic": 54088.9261725
+          },
+          {
+            "round": 2,
+            "host_monotonic": 54092.4754277
+          }
+        ],
+        "memory": "Applications Memory Usage (in Kilobytes):\nUptime: 38031938 Realtime: 38031938\n\n** MEMINFO in pid 25438 [com.smartisanos.launcher] **\n                   Pss  Private  Private     Swap      Rss     Heap     Heap     Heap\n                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free\n                ------   ------   ------   ------   ------   ------   ------   ------\n  Native Heap    21108    21072        0        0    24792    42252    24765    14813\n  Dalvik Heap    17423    17324        0        0    24928    35222    17611    17611\n Dalvik Other     1264     1136        0        0     2196                           \n        Stack      704      704        0        0      708                           \n       Ashmem        9        0        0        0      732                           \n    Other dev      136        0      136        0      440                           \n     .so mmap     1460      308        0        0    46276                           \n    .jar mmap     1097        0        0        0    41128                           \n    .apk mmap      812        8       24        0     3904                           \n    .ttf mmap       32        0        0        0      384                           \n    .dex mmap     1675        0        0        0     5556                           \n    .oat mmap      282        0        0        0    12220                           \n    .art mmap     1676     1260        0        0    33436                           \n   Other mmap     1014        4      336        0     4436                           \n      Unknown      632      624        0        0     2112                           \n        TOTAL    49324    42440      496        0   203248    77474    42376    32424\n \n App Summary\n                       Pss(KB)                        Rss(KB)\n                        ------                         ------\n           Java Heap:    18584                          58364\n         Native Heap:    21072                          24792\n                Code:      344                         109716\n               Stack:      704                            708\n            Graphics:        0                              0\n       Private Other:     2232\n              System:     6388\n             Unknown:                                    9668\n \n           TOTAL PSS:    49324            TOTAL RSS:   203248      TOTAL SWAP (KB):        0\n \n Objects\n               Views:       11         ViewRootImpl:        1\n         AppContexts:        5           Activities:        1\n              Assets:       28        AssetManagers:        0\n       Local Binders:       57        Proxy Binders:       72\n       Parcel memory:       19         Parcel count:       55\n    Death Recipients:        0             WebViews:        0\n \n Native Allocations\n                         Count                       Total(kB)\n                        ------                         ------\n   Bitmap (malloced):       13                            298\n    Other (malloced):      413                             37\n Other (nonmalloced):      223                            134\n \n SQL\n         MEMORY_USED:      996\n  PAGECACHE_OVERFLOW:      908          MALLOC_SIZE:       77\n \n DATABASES\n      pgsz     dbsz   Lookaside(b) cache hits cache misses cache size  Dbname\nPER CONNECTION STATS\n         4     1652            108   103   110    25  /data/user/0/com.smartisanos.launcher/databases/launcher.db\nPOOL STATS\n     cache hits  cache misses    cache size  Dbname\n            103           111            25  /data/user/0/com.smartisanos.launcher/databases/launcher.db\n \n",
+        "process_stat": "25438"
+      },
+      "apk_sha256": "F784CDBF103C4439AF8E199B7642BCC8C57228FCBA56C3D07727C87D64A716F4"
+    },
+    "final-aero-gesture": {
+      "evidence_path": "build\\home-background-sync-20261013\\final-aero-gesture",
+      "sessions": [
+        {
+          "resume_end_ms": 9.879,
+          "surface_create_ms": 76.501,
+          "first_visible_buffer_sample_ms": 713.378
+        },
+        {
+          "resume_end_ms": 63.818,
+          "surface_create_ms": 97.387,
+          "first_visible_buffer_sample_ms": 755.433
+        }
+      ],
+      "sample_states": {
+        "serial": "emulator-5554",
+        "sdk": 36,
+        "wm": "Physical size: 1440x3120\nOverride size: 1080x2400\n",
+        "method": "gesture",
+        "navigation_mode": "2",
+        "previous_settings": {
+          "launcher_home_diagnostics_enabled": "null",
+          "launcher_home_surface_attachment_experiment": "null",
+          "launcher_home_opaque_wallpaper_experiment": "null"
+        },
+        "attachment": false,
+        "opaque_wallpaper_off": false,
+        "window_trace": true,
+        "host_layer": "surface",
+        "samples": [
+          {
+            "label": "before",
+            "host_monotonic": 54404.1792312,
+            "pid": "25438",
+            "top": [
+              "topResumedActivity=ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "Resumed: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "ResumedActivity: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}"
+            ],
+            "layers": [
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher](BLAST)#3348 parentId=3347}",
+              "RequestedLayerState{7b039d1 smt_launcher#3067 parentId=2889}",
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher]#3347 parentId=3346 relativeParentId=3343 z=-2}",
+              "RequestedLayerState{Bounds for - smt_launcher#3346 parentId=3343}",
+              "RequestedLayerState{smt_launcher#3343 parentId=3067}",
+              "RequestedLayerState{Background for 43c055a SurfaceView[smt_launcher]#3349 parentId=3347 relativeParentId=3343 z=-2147483648}"
+            ]
+          },
+          {
+            "label": "return-0",
+            "host_monotonic": 54411.3703682,
+            "pid": "25438",
+            "top": [
+              "topResumedActivity=ActivityRecord{163532613 u0 com.android.settings/.homepage.SettingsHomepageActivity t97}",
+              "Resumed: ActivityRecord{163532613 u0 com.android.settings/.homepage.SettingsHomepageActivity t97}",
+              "ResumedActivity: ActivityRecord{163532613 u0 com.android.settings/.homepage.SettingsHomepageActivity t97}"
+            ],
+            "layers": [
+              "RequestedLayerState{7b039d1 smt_launcher#3067 parentId=2889}"
+            ]
+          },
+          {
+            "label": "return-1",
+            "host_monotonic": 54414.3978216,
+            "pid": "25438",
+            "top": [
+              "topResumedActivity=ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "Resumed: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "ResumedActivity: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}"
+            ],
+            "layers": [
+              "RequestedLayerState{7b039d1 smt_launcher#3067 parentId=2889}",
+              "RequestedLayerState{Background for 43c055a SurfaceView[smt_launcher]#3393 parentId=3391 relativeParentId=3387 z=-2147483648}",
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher](BLAST)#3392 parentId=3391}",
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher]#3391 parentId=3390 relativeParentId=3387 z=-2}",
+              "RequestedLayerState{Bounds for - smt_launcher#3390 parentId=3387}",
+              "RequestedLayerState{smt_launcher#3387 parentId=3067}"
+            ]
+          },
+          {
+            "label": "return-2",
+            "host_monotonic": 54417.9685513,
+            "pid": "25438",
+            "top": [
+              "topResumedActivity=ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "Resumed: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}",
+              "ResumedActivity: ActivityRecord{24700376 u0 com.smartisanos.launcher/.Launcher t136}"
+            ],
+            "layers": [
+              "RequestedLayerState{Background for 43c055a SurfaceView[smt_launcher]#3417 parentId=3415 relativeParentId=3411 z=-2147483648}",
+              "RequestedLayerState{7b039d1 smt_launcher#3067 parentId=2889}",
+              "RequestedLayerState{smt_launcher#3411 parentId=3067}",
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher]#3415 parentId=3414 relativeParentId=3411 z=-2}",
+              "RequestedLayerState{Bounds for - smt_launcher#3414 parentId=3411}",
+              "RequestedLayerState{43c055a SurfaceView[smt_launcher](BLAST)#3416 parentId=3415}"
+            ]
+          }
+        ],
+        "settle_seconds": 2.0,
+        "gesture_duration_ms": 100,
+        "keyguard": [
+          "showing=false",
+          "inputRestricted=false"
+        ],
+        "actions": [
+          {
+            "round": 0,
+            "host_monotonic": 54408.9122389
+          },
+          {
+            "round": 1,
+            "host_monotonic": 54412.0137425
+          },
+          {
+            "round": 2,
+            "host_monotonic": 54415.5473029
+          }
+        ],
+        "memory": "Applications Memory Usage (in Kilobytes):\nUptime: 38354648 Realtime: 38354648\n\n** MEMINFO in pid 25438 [com.smartisanos.launcher] **\n                   Pss  Private  Private     Swap      Rss     Heap     Heap     Heap\n                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free\n                ------   ------   ------   ------   ------   ------   ------   ------\n  Native Heap    54792    54756        0        0    58460    84244    58431    21442\n  Dalvik Heap    16171    16072        0        0    23664    29091    14546    14545\n Dalvik Other     1384     1160        0        0     2404                           \n        Stack      812      812        0        0      816                           \n       Ashmem        9        0        0        0      776                           \n    Other dev      136        0      136        0      440                           \n     .so mmap     1682      308        0        0    47404                           \n    .jar mmap     1222        0        0        0    43020                           \n    .apk mmap      869        8      144        0     4528                           \n    .ttf mmap       53        0        0        0      508                           \n    .dex mmap     1768        0        0        0     5808                           \n    .oat mmap      296        0        0        0    12476                           \n    .art mmap     1773     1320       16        0    33532                           \n   Other mmap     2552        4     1756        0     6580                           \n      Unknown      648      640        0        0     2128                           \n        TOTAL    84167    75080     2052        0   242544   113335    72977    35987\n \n App Summary\n                       Pss(KB)                        Rss(KB)\n                        ------                         ------\n           Java Heap:    17408                          57196\n         Native Heap:    54756                          58460\n                Code:      464                         114184\n               Stack:      812                            816\n            Graphics:        0                              0\n       Private Other:     3692\n              System:     7035\n             Unknown:                                   11888\n \n           TOTAL PSS:    84167            TOTAL RSS:   242544      TOTAL SWAP (KB):        0\n \n Objects\n               Views:      243         ViewRootImpl:        3\n         AppContexts:        7           Activities:        2\n              Assets:       34        AssetManagers:        0\n       Local Binders:       68        Proxy Binders:       83\n       Parcel memory:       19         Parcel count:       62\n    Death Recipients:        0             WebViews:        0\n \n Native Allocations\n                         Count                       Total(kB)\n                        ------                         ------\n   Bitmap (malloced):      147                          16528\n    Other (malloced):     1240                            117\n Other (nonmalloced):      198                            125\n \n SQL\n         MEMORY_USED:     1100\n  PAGECACHE_OVERFLOW:     1010          MALLOC_SIZE:       77\n \n DATABASES\n      pgsz     dbsz   Lookaside(b) cache hits cache misses cache size  Dbname\nPER CONNECTION STATS\n         4     1652            116   106   114    25  /data/user/0/com.smartisanos.launcher/databases/launcher.db\nPOOL STATS\n     cache hits  cache misses    cache size  Dbname\n            106           115            25  /data/user/0/com.smartisanos.launcher/databases/launcher.db\n \n",
+        "process_stat": "25438"
+      },
+      "apk_sha256": "F784CDBF103C4439AF8E199B7642BCC8C57228FCBA56C3D07727C87D64A716F4"
+    },
+    "delivery-final-black-gesture": {
+      "apk_sha256": "6C8E357488FCF9DEADDA1481C6BB563F6356521D0D3A83BFFEC7C271B69AEE44",
+      "input_rounds": 3,
+      "valid_home_returns": 2,
+      "excluded_rounds": [
+        0
+      ],
+      "pid": "28444",
+      "wallpaper_jobs_on_return": 0,
+      "evidence_path": "build\\home-background-sync-20261013\\delivery-final-black-gesture",
+      "sessions": [
+        {
+          "resume_end_ms": 2.592,
+          "surface_create_ms": 63.217,
+          "first_visible_buffer_sample_ms": 634.425
+        },
+        {
+          "resume_end_ms": 8.229,
+          "surface_create_ms": 47.334,
+          "first_visible_buffer_sample_ms": 620.795
+        }
+      ],
+      "sample_states": {
+        "serial": "emulator-5554",
+        "sdk": 36,
+        "wm": "Physical size: 1440x3120\nOverride size: 1080x2400\n",
+        "method": "gesture",
+        "navigation_mode": "2",
+        "previous_settings": {
+          "launcher_home_diagnostics_enabled": "null",
+          "launcher_home_surface_attachment_experiment": "null",
+          "launcher_home_opaque_wallpaper_experiment": "null"
+        },
+        "attachment": false,
+        "opaque_wallpaper_off": false,
+        "window_trace": true,
+        "host_layer": "surface",
+        "samples": [
+          {
+            "label": "before",
+            "host_monotonic": 55014.6830714,
+            "pid": "28444",
+            "top": [
+              "topResumedActivity=ActivityRecord{135994326 u0 com.smartisanos.launcher/.Launcher t143}",
+              "Resumed: ActivityRecord{135994326 u0 com.smartisanos.launcher/.Launcher t143}",
+              "ResumedActivity: ActivityRecord{135994326 u0 com.smartisanos.launcher/.Launcher t143}"
+            ],
+            "layers": [
+              "RequestedLayerState{448bf6f SurfaceView[smt_launcher](BLAST)#3592 parentId=3591}",
+              "RequestedLayerState{448bf6f SurfaceView[smt_launcher]#3591 parentId=3590 relativeParentId=3589 z=-2}",
+              "RequestedLayerState{ec20ebd smt_launcher#3494 parentId=3488}",
+              "RequestedLayerState{Background for 448bf6f SurfaceView[smt_launcher]#3593 parentId=3591 relativeParentId=3589 z=-2147483648}",
+              "RequestedLayerState{Bounds for - smt_launcher#3590 parentId=3589}",
+              "RequestedLayerState{smt_launcher#3589 parentId=3494}"
+            ]
+          },
+          {
+            "label": "return-0",
+            "host_monotonic": 55022.0676566,
+            "pid": "28444",
+            "top": [
+              "topResumedActivity=ActivityRecord{163532613 u0 com.android.settings/.homepage.SettingsHomepageActivity t97}",
+              "Resumed: ActivityRecord{163532613 u0 com.android.settings/.homepage.SettingsHomepageActivity t97}",
+              "ResumedActivity: ActivityRecord{163532613 u0 com.android.settings/.homepage.SettingsHomepageActivity t97}"
+            ],
+            "layers": [
+              "RequestedLayerState{ec20ebd smt_launcher#3494 parentId=3488}"
+            ]
+          },
+          {
+            "label": "return-1",
+            "host_monotonic": 55025.1154629,
+            "pid": "28444",
+            "top": [
+              "topResumedActivity=ActivityRecord{135994326 u0 com.smartisanos.launcher/.Launcher t143}",
+              "Resumed: ActivityRecord{135994326 u0 com.smartisanos.launcher/.Launcher t143}",
+              "ResumedActivity: ActivityRecord{135994326 u0 com.smartisanos.launcher/.Launcher t143}"
+            ],
+            "layers": [
+              "RequestedLayerState{Background for 448bf6f SurfaceView[smt_launcher]#3651 parentId=3649 relativeParentId=3645 z=-2147483648}",
+              "RequestedLayerState{ec20ebd smt_launcher#3494 parentId=3488}",
+              "RequestedLayerState{448bf6f SurfaceView[smt_launcher](BLAST)#3650 parentId=3649}",
+              "RequestedLayerState{448bf6f SurfaceView[smt_launcher]#3649 parentId=3648 relativeParentId=3645 z=-2}",
+              "RequestedLayerState{Bounds for - smt_launcher#3648 parentId=3645}",
+              "RequestedLayerState{smt_launcher#3645 parentId=3494}"
+            ]
+          },
+          {
+            "label": "return-2",
+            "host_monotonic": 55028.8134363,
+            "pid": "28444",
+            "top": [
+              "topResumedActivity=ActivityRecord{135994326 u0 com.smartisanos.launcher/.Launcher t143}",
+              "Resumed: ActivityRecord{135994326 u0 com.smartisanos.launcher/.Launcher t143}",
+              "ResumedActivity: ActivityRecord{135994326 u0 com.smartisanos.launcher/.Launcher t143}"
+            ],
+            "layers": [
+              "RequestedLayerState{ec20ebd smt_launcher#3494 parentId=3488}",
+              "RequestedLayerState{Background for 448bf6f SurfaceView[smt_launcher]#3675 parentId=3673 relativeParentId=3669 z=-2147483648}",
+              "RequestedLayerState{448bf6f SurfaceView[smt_launcher](BLAST)#3674 parentId=3673}",
+              "RequestedLayerState{448bf6f SurfaceView[smt_launcher]#3673 parentId=3672 relativeParentId=3669 z=-2}",
+              "RequestedLayerState{Bounds for - smt_launcher#3672 parentId=3669}",
+              "RequestedLayerState{smt_launcher#3669 parentId=3494}"
+            ]
+          }
+        ],
+        "settle_seconds": 2.0,
+        "gesture_duration_ms": 100,
+        "keyguard": [
+          "showing=false",
+          "inputRestricted=false"
+        ],
+        "actions": [
+          {
+            "round": 0,
+            "host_monotonic": 55019.5944817
+          },
+          {
+            "round": 1,
+            "host_monotonic": 55022.7061739
+          },
+          {
+            "round": 2,
+            "host_monotonic": 55026.4282207
+          }
+        ],
+        "memory": "Applications Memory Usage (in Kilobytes):\nUptime: 38965826 Realtime: 38965826\n\n** MEMINFO in pid 28444 [com.smartisanos.launcher] **\n                   Pss  Private  Private     Swap      Rss     Heap     Heap     Heap\n                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free\n                ------   ------   ------   ------   ------   ------   ------   ------\n  Native Heap    52750    52712        0        0    56432    77676    54922    18463\n  Dalvik Heap    15129    15028        0        0    22620    28493    14247    14246\n Dalvik Other     1672     1492        0        0     2648                           \n        Stack      824      824        0        0      828                           \n       Ashmem        9        0        0        0      776                           \n    Other dev      132        0      132        0      436                           \n     .so mmap     1838      312       12        0    47536                           \n    .jar mmap     1267        0        0        0    42764                           \n    .apk mmap     1462        8      920        0     4540                           \n    .ttf mmap       53        0        0        0      508                           \n    .dex mmap     2475        0        0        0     5872                           \n    .oat mmap      312        0        0        0    12476                           \n    .art mmap     1178      756        0        0    32884                           \n   Other mmap     2585        4     1744        0     6504                           \n      Unknown      640      632        0        0     2120                           \n        TOTAL    82326    71768     2808        0   238944   106169    69169    32709\n \n App Summary\n                       Pss(KB)                        Rss(KB)\n                        ------                         ------\n           Java Heap:    15784                          55504\n         Native Heap:    52712                          56432\n                Code:     1252                         114044\n               Stack:      824                            828\n            Graphics:        0                              0\n       Private Other:     4004\n              System:     7750\n             Unknown:                                   12136\n \n           TOTAL PSS:    82326            TOTAL RSS:   238944      TOTAL SWAP (KB):        0\n \n Objects\n               Views:       11         ViewRootImpl:        1\n         AppContexts:        5           Activities:        1\n              Assets:       33        AssetManagers:        0\n       Local Binders:       61        Proxy Binders:       74\n       Parcel memory:       18         Parcel count:       58\n    Death Recipients:        0             WebViews:        0\n \n Native Allocations\n                         Count                       Total(kB)\n                        ------                         ------\n   Bitmap (malloced):      166                          26138\n    Other (malloced):      905                             85\n Other (nonmalloced):      207                            126\n \n SQL\n         MEMORY_USED:     1098\n  PAGECACHE_OVERFLOW:     1010          MALLOC_SIZE:       77\n \n DATABASES\n      pgsz     dbsz   Lookaside(b) cache hits cache misses cache size  Dbname\nPER CONNECTION STATS\n         4     1652            116   107   112    25  /data/user/0/com.smartisanos.launcher/databases/launcher.db\nPOOL STATS\n     cache hits  cache misses    cache size  Dbname\n            107           113            25  /data/user/0/com.smartisanos.launcher/databases/launcher.db\n \n",
+        "process_stat": "28444"
+      }
+    }
+  },
+  "picker_samples": {
+    "final-transparent-pick": {
+      "start_device_seconds": "1791904848.633666000",
+      "pid_before": "24812",
+      "pid_after": "24812",
+      "source_ready_ms": 176,
+      "refresh_request_ms": 191,
+      "system_applied_log": "15:20:52.644",
+      "wallpaper_id": 13,
+      "apk_sha256": "F784CDBF103C4439AF8E199B7642BCC8C57228FCBA56C3D07727C87D64A716F4"
+    },
+    "final-aero-pick-verified": {
+      "start_device_seconds": "1791905239.574516600",
+      "pid_before": "25438",
+      "pid_after": "25438",
+      "source_ready_ms": 167,
+      "refresh_request_ms": 182,
+      "system_applied_log": "15:27:23.406",
+      "wallpaper_id": 17,
+      "apk_sha256": "F784CDBF103C4439AF8E199B7642BCC8C57228FCBA56C3D07727C87D64A716F4"
+    }
+  },
+  "limits": [
+    "onResume/GL completion is not presentation",
+    "first_visible_buffer_ms is a SurfaceFlinger sampled visibility bound, not calibrated full-screen presentation",
+    "actual_frame timeline Background layer is not a complete desktop buffer",
+    "one Aero gesture returned to Settings and is excluded",
+    "OPPO and vivo final APK not tested",
+    "four-finger route wired via shared theme callback; physical four-finger gesture not tested",
+    "blur/transparent native effects, system dim/zoom and late icons can still differ",
+    "source publish time is not user-visible frame time"
+  ],
+  "previous_candidate_sha256": "F784CDBF103C4439AF8E199B7642BCC8C57228FCBA56C3D07727C87D64A716F4",
+  "previous_candidate_path": "build\\home-background-sync-20261013\\final-before-ui-thread.apk"
+}

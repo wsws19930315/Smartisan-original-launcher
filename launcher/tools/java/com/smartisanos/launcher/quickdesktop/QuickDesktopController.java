@@ -65,6 +65,29 @@ public final class QuickDesktopController {
     private static boolean consumeRootGestureUntilEnd;
     private static boolean rootGestureCancelled;
 
+    private static volatile WorkspaceState renderedWorkspace;
+
+    /** Scalar gate published after the GL scene update; never owns scene resources. */
+    private static final class WorkspaceState {
+        final WeakReference<Object> page;
+        final int mode;
+        WorkspaceState(Object page, int mode) {
+            this.page = new WeakReference<>(page);
+            this.mode = mode;
+        }
+    }
+
+    public static void publishWorkspaceState(Object page, int index, int mode) {
+        if (page == null) {
+            renderedWorkspace = null;
+            return;
+        }
+        int allowedMode = index == 0 && isWorkspaceMode(mode) ? mode : 0;
+        WorkspaceState previous = renderedWorkspace;
+        if (previous != null && previous.page.get() == page && previous.mode == allowedMode) return;
+        renderedWorkspace = new WorkspaceState(page, allowedMode);
+    }
+
     private QuickDesktopController() {
     }
 
@@ -356,6 +379,11 @@ public final class QuickDesktopController {
         }
     }
 
+    static void onBackgroundFailed(QuickDesktopHostView capturedHost) {
+        if (capturedHost != host() || !captureStartedForGesture) return;
+        capturedHost.closeImmediately("background-failed");
+    }
+
     public static boolean onKeyEvent(KeyEvent event) {
         QuickDesktopHostView host = host();
         if (host == null || event == null || host.getOpenProgress() <= 0.0f
@@ -389,6 +417,7 @@ public final class QuickDesktopController {
     }
 
     public static void onLauncherStopped() {
+        renderedWorkspace = null;
         QuickDesktopHostView host = host();
         if (host != null && (host.getOpenProgress() > 0.0f || hostWindow != null)) {
             host.closeImmediately(actionLaunchPending
@@ -447,11 +476,13 @@ public final class QuickDesktopController {
         java.lang.reflect.Field field = type.getDeclaredField("px");
         field.setAccessible(true);
         Object page = field.get(workspace);
-        if ((Integer) page.getClass().getMethod("sr").invoke(page) != 0) return 0;
-        return (Integer) page.getClass().getMethod("Dl").invoke(page);
+        // sr() -> Ib(true) reads native transforms and borrows the engine's global TempVars.
+        // RootView touch callbacks run on MAIN, so they must only consume GL-published data.
+        WorkspaceState state = renderedWorkspace;
+        return state != null && state.page.get() == page ? state.mode : 0;
     }
 
-    private static boolean isWorkspaceMode(int mode) {
+    public static boolean isWorkspaceMode(int mode) {
         return mode == 12 || mode == 9 || mode == 13 || mode == 10;
     }
 
@@ -473,6 +504,7 @@ public final class QuickDesktopController {
     }
 
     public static void onLauncherDestroyed() {
+        renderedWorkspace = null;
         cleanup("launcher-destroyed", true);
     }
 

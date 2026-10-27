@@ -56,6 +56,21 @@ public final class OverviewAspectProbe {
             Constants.mode(overview).page_height=50;
             cell.parent=new Object(); LauncherSettingBridge.preserveOverviewIconAspect(cell,overview); verify(icon,5);
         }
+        for (int mode : new int[] {12,9}) {
+            int overview=mode==12?13:10;
+            Node icon=new Node(), active=new Node();Cell cell=new Cell(mode,icon,active);
+            cell.parent=new com.smartisanos.launcher.view.V();
+            for(int i=0;i<20;i++) LauncherSettingBridge.preserveOverviewIconAspect(cell,overview);
+            equal(icon.getScale().x,2.3f,"dock grows x");equal(icon.getScale().y,10.35f,"dock cell aspect and size");
+            equal(icon.getScale().z,4,"dock z");equal(icon.updates,1,"dock no cumulative growth");
+            LauncherSettingBridge.preserveOverviewIconAspect(cell,mode);verify(icon,3);verify(active,3);
+            icon.setScale(4f,5f,4f);LauncherSettingBridge.preserveOverviewIconAspect(cell,overview);
+            equal(icon.getScale().x,4.6f,"new binding x");equal(icon.getScale().y,17.25f,"new binding y");
+            icon.setScale(6f,7f,4f);LauncherSettingBridge.preserveOverviewIconAspect(cell,overview);
+            equal(icon.getScale().x,6.9f,"rebound x");equal(icon.getScale().y,24.15f,"rebound y");
+            LauncherSettingBridge.preserveOverviewIconAspect(cell,mode);
+            equal(icon.getScale().x,6,"restored x");equal(icon.getScale().y,7,"restored y");
+        }
         Node ignored=new Node(); LauncherSettingBridge.preserveOverviewIconAspect(new Cell(8,ignored,null),13); verify(ignored,3);
         LauncherSettingBridge.preserveOverviewIconAspect(new Cell(12,null,null),13);
         System.out.println("PASS OVERVIEW_ASPECT checks="+checks);

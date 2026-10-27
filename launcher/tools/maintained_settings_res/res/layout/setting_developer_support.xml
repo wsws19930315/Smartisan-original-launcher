@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:setting="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/background" android:fitsSystemWindows="true">
+    <com.smartisanos.home.widget.sys.Title android:id="@+id/view_title"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_alignParentTop="true" setting:title_titlex="@string/donate_title" />
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent"
+        android:layout_below="@id/view_title" android:overScrollMode="always">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingTop="@dimen/setting_item_top"
+            android:paddingBottom="@dimen/settings_item_bottom_margin">
+            <com.smartisanos.home.widget.sys.TipsView style="@style/SettingItemTipsStyle"
+                android:text="@string/donate_description" />
+            <RelativeLayout android:id="@+id/donate_wechat_option"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/setting_item_top"
+                android:background="@drawable/setting_item_up">
+                <TextView style="@style/SmartisanSettingsRowTitle" android:layout_height="wrap_content"
+                    android:layout_centerVertical="true" android:layout_toLeftOf="@id/donate_wechat_checked"
+                    android:paddingTop="16dp" android:paddingBottom="16dp" android:text="@string/donate_wechat" />
+                <ImageView android:id="@+id/donate_wechat_checked"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true" android:layout_centerVertical="true"
+                    android:layout_marginRight="18dp" android:src="@drawable/selector_item_check_icon"
+                    android:importantForAccessibility="no" />
+            </RelativeLayout>
+            <RelativeLayout android:id="@+id/donate_alipay_option"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:background="@drawable/more_item_middle">
+                <TextView style="@style/SmartisanSettingsRowTitle" android:layout_height="wrap_content"
+                    android:layout_centerVertical="true" android:layout_toLeftOf="@id/donate_alipay_checked"
+                    android:paddingTop="16dp" android:paddingBottom="16dp" android:text="@string/donate_alipay" />
+                <ImageView android:id="@+id/donate_alipay_checked"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true" android:layout_centerVertical="true"
+                    android:layout_marginRight="18dp" android:src="@drawable/selector_item_check_icon"
+                    android:visibility="invisible" android:importantForAccessibility="no" />
+            </RelativeLayout>
+            <FrameLayout android:id="@+id/donate_code_panel" android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="@dimen/setting_item_text_left" android:paddingRight="@dimen/setting_item_text_left"
+                android:paddingTop="@dimen/setting_item_top" android:paddingBottom="@dimen/setting_item_top"
+                android:background="@drawable/setting_item_down_normal">
+                <ImageView android:id="@+id/donate_code" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:maxHeight="360dp"
+                    android:adjustViewBounds="true" android:scaleType="fitCenter" />
+            </FrameLayout>
+            <com.smartisanos.home.widget.sys.TipsView android:id="@+id/donate_image_error"
+                style="@style/SettingItemTipsStyle" android:text="@string/donate_image_error"
+                android:visibility="gone" />
+            <com.smartisanos.home.widget.sys.TipsView style="@style/SettingItemTipsStyle"
+                android:text="@string/donate_footer" />
+        </LinearLayout>
+    </ScrollView>
+</RelativeLayout>

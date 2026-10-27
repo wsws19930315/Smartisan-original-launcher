@@ -47,6 +47,23 @@
     .line 2
     iget-object v0, p0, Lcom/smartisanos/launcher/e/q;->_j:Lcom/smartisanos/launcher/data/ItemInfo;
 
+    invoke-static {v0}, Lcom/smartisanos/launcher/theme/IconRasterDiagnostics;->prepareDeferredColorSource(Ljava/lang/Object;)Landroid/graphics/Bitmap;
+
+    move-result-object v1
+
+    if-eqz v1, :cond_color_requires_cache
+
+    move-object v0, v1
+
+    invoke-static {v0}, Lcom/smartisanos/launcher/actions/sort/color/f;->c(Landroid/graphics/Bitmap;)Lcom/smartisanos/launcher/actions/sort/color/IconColor$ColorInfo;
+
+    move-result-object v1
+
+    invoke-virtual {v0}, Landroid/graphics/Bitmap;->recycle()V
+
+    goto :goto_color_info_ready
+
+    :cond_color_requires_cache
     invoke-virtual {v0}, Lcom/smartisanos/launcher/data/ItemInfo;->Oe()[B
 
     move-result-object v0
@@ -64,6 +81,7 @@
     invoke-virtual {v0}, Landroid/graphics/Bitmap;->recycle()V
 
     .line 5
+    :goto_color_info_ready
     iget-object v0, p0, Lcom/smartisanos/launcher/e/q;->_j:Lcom/smartisanos/launcher/data/ItemInfo;
 
     invoke-virtual {v1, v0}, Lcom/smartisanos/launcher/actions/sort/color/IconColor$ColorInfo;->e(Lcom/smartisanos/launcher/data/ItemInfo;)V

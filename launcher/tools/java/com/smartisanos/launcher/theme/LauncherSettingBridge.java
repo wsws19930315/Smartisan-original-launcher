@@ -1,6 +1,8 @@
 package com.smartisanos.launcher.theme;
 
 import android.content.Context;
+import android.content.ContextWrapper;
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -23,6 +25,92 @@ import java.util.Map;
 import java.util.Set;
 
 public final class LauncherSettingBridge {
+    /** Declare GL's same-resolution refresh capability; the system/user policy chooses cadence. */
+    public static void applyLauncherSurfaceRefresh(android.view.SurfaceView view) {
+        if (Build.VERSION.SDK_INT < 30 || view == null) return;
+        // Surface and its Activity window must submit the same capability hint.
+        // A Surface-only vote can otherwise compete with an OEM's default window cadence.
+        Context owner = view.getContext();
+        while (owner instanceof ContextWrapper) {
+            if (owner instanceof Activity) {
+                Activity activity = (Activity) owner;
+                if (!activity.isFinishing() && !activity.isDestroyed()) {
+                    applyLauncherWindowRefresh(activity.getWindow());
+                }
+                break;
+            }
+            Context base = ((ContextWrapper) owner).getBaseContext();
+            if (base == owner) break;
+            owner = base;
+        }
+        android.view.Display display = view.getDisplay();
+        android.view.Surface surface = view.getHolder().getSurface();
+        if (display == null || surface == null || !surface.isValid()) return;
+        float rate = highestSameResolutionRefresh(display);
+        if (!(rate > 0f) || Float.isInfinite(rate)) return;
+        try {
+            if (Build.VERSION.SDK_INT >= 31) {
+                surface.setFrameRate(rate, android.view.Surface.FRAME_RATE_COMPATIBILITY_DEFAULT,
+                        android.view.Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS);
+            } else {
+                surface.setFrameRate(rate, android.view.Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
+            }
+        } catch (IllegalArgumentException | IllegalStateException unavailableSurface) {
+            // Surface destruction can race visibility changes; its next lifecycle reapplies it.
+        }
+    }
+
+    /** Request the same capability for foreground pages drawn by the UI renderer. */
+    public static void applyLauncherWindowRefresh(Window window) {
+        if (window == null) return;
+        View decor = window.peekDecorView();
+        android.view.Display display = decor == null ? null : decor.getDisplay();
+        if (display == null) return;
+        float rate = highestSameResolutionRefresh(display);
+        if (!(rate > 0f) || Float.isInfinite(rate)) return;
+        android.view.WindowManager.LayoutParams attributes = window.getAttributes();
+        // Leave resolution/mode selection and system/user limits to the platform.
+        if (attributes.preferredDisplayModeId != 0 || attributes.preferredRefreshRate == rate) return;
+        attributes.preferredRefreshRate = rate;
+        window.setAttributes(attributes);
+    }
+
+    private static float highestSameResolutionRefresh(android.view.Display display) {
+        android.view.Display.Mode current = display.getMode();
+        float rate = 0f;
+        // Some ROMs expose a synthetic 60 Hz current mode until the renderer declares
+        // its content rate. Supported modes retain the panel's available capabilities.
+        for (android.view.Display.Mode mode : display.getSupportedModes()) {
+            float candidate = mode.getRefreshRate();
+            if (mode.getPhysicalWidth() == current.getPhysicalWidth()
+                    && mode.getPhysicalHeight() == current.getPhysicalHeight()
+                    && candidate > rate && !Float.isInfinite(candidate)) rate = candidate;
+        }
+        return rate;
+    }
+
+    /** Original per-frame Folder progression, normalized to the app's current refresh cadence. */
+    public static float folderAnimationFrameDelta(float elapsedDelta, float originalFrameDelta) {
+        // A resumed renderer first establishes its clock without advancing any timeline.
+        if (!(elapsedDelta > 0f) || !(originalFrameDelta > 0f)) return elapsedDelta;
+        Context context = MaintainedLauncherSettingsHost.currentApplicationContext();
+        if (context == null) return elapsedDelta;
+        Object service = context.getSystemService(Context.WINDOW_SERVICE);
+        if (!(service instanceof android.view.WindowManager)) return elapsedDelta;
+        try {
+            android.view.Display display = ((android.view.WindowManager) service).getDefaultDisplay();
+            float rate = display == null ? 0f : display.getRefreshRate();
+            if (rate > 0f && !Float.isInfinite(rate)) {
+                // Keep the original progression per displayed frame, without doubling speed
+                // at 120 Hz. Retain the existing 100 ms cap for exceptionally slow modes.
+                return Math.min(originalFrameDelta * 60f / rate, originalFrameDelta * 6f);
+            }
+        } catch (RuntimeException unavailableDisplay) {
+            // A removed/unavailable display must retain the pre-existing elapsed clock.
+        }
+        return elapsedDelta;
+    }
+
     private static final String PREFS = "com.smartisanos.launcher_prefs";
     private static final String SETTINGS_PREFS = "launcher_settings";
     private static final String KEY_ICON_SIZE = "launcher_icon_size";
@@ -171,7 +259,7 @@ public final class LauncherSettingBridge {
                         WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
             }
         }
-        MaintainedLauncherSettingsHost.ensureDefaultAeroWallpaper(window.getContext());
+        MaintainedLauncherSettingsHost.ensureThemeSystemWallpaper(window.getContext());
         traceThemeBarState("WINDOW_APPLIED", decor.getSystemUiVisibility());
         if (Build.VERSION.SDK_INT >= 30 && window.getInsetsController() != null) {
             Log.w("LauncherThemeBar", "appearance="
@@ -1253,14 +1341,35 @@ public final class LauncherSettingBridge {
                 Math.max(firstX, secondX), Math.max(firstY, secondY));
     }
 
+    /** Keep only Mc's folder-label paint generation in the existing engine texture owner. */
+    public static boolean retainFolderLabelTexture(String key, Paint paint, int height, int width,
+            Object manager, Paint folderPaint) {
+        // Mc.hq() creates a new GO Paint on configuration rebuild; other paints can mutate.
+        // Keep this admission scoped to that owner, never generalize it to arbitrary text.
+        if (paint == null || paint != folderPaint || manager == null || width <= 0 || height <= 0) {
+            return false;
+        }
+        try {
+            Object texture = invokePixelGrid(manager, "bb", key);
+            return texture != null
+                    && ((Number) invokePixelGrid(texture, "getContextGeneration")).intValue()
+                    == com.smartisanos.launcher.gesture.LauncherHomeCompat.getEglContextGeneration()
+                    && ((Number) invokePixelGrid(texture, "getWidth")).floatValue() == width
+                    && ((Number) invokePixelGrid(texture, "getHeight")).floatValue() == height;
+        } catch (Exception error) {
+            Log.w(TAG, "FOLDER_LABEL_TEXTURE_ADMISSION_FAILED", error);
+            return false;
+        }
+    }
+
     /** Keeps a stationary, directly drawn static texture on physical texel boundaries. */
     public static void alignStaticIconPixelGrid(Object cell) {
         try {
-            Object item = readPrivateField(cell, "Rj");
-            if (item == null || ((Number) readPrivateField(item, "itemType")).intValue() != 0) return;
-            int mode = ((Number) readPrivateField(cell, "fH")).intValue();
+            Object item = readGeometryField(cell, "Rj");
+            if (item == null || ((Number) readGeometryField(item, "itemType")).intValue() != 0) return;
+            int mode = ((Number) readGeometryField(cell, "fH")).intValue();
             if (mode == 8) return;
-            Object[] nodes = (Object[]) readPrivateField(cell, "sc");
+            Object[] nodes = (Object[]) readGeometryField(cell, "sc");
             if (nodes == null || nodes[0] == null || nodes[7] != null) return;
             Object node = nodes[0];
             if (invokePixelGrid(node, "getRenderTarget") != null) return;
@@ -1271,16 +1380,14 @@ public final class LauncherSettingBridge {
                 if (Math.abs(floatField(scale, "x") - 1f) > 0.0001f
                         || Math.abs(floatField(scale, "y") - 1f) > 0.0001f) return;
             }
-            Object renderer = Class.forName("com.smartisanos.smengine.Ra")
-                    .getMethod("getInstance").invoke(null);
+            Object renderer = pixelGridMethod(Class.forName("com.smartisanos.smengine.Ra"),
+                    "getInstance", 0).invoke(null);
             Object camera = invokePixelGrid(invokePixelGrid(renderer, "at"), "Vj");
             String textureName = (String) invokePixelGrid(node, "getTextureName", Integer.valueOf(0));
             Object texture = invokePixelGrid(invokePixelGrid(renderer, "rt"), "bb", textureName);
             if (texture == null) return;
             float[] corners = new float[12];
-            node.getClass().getMethod("getCornerPointScreenCoord",
-                    Class.forName("com.smartisanos.smengine.Camera"), float[].class)
-                    .invoke(node, camera, corners);
+            invokePixelGrid(node, "getCornerPointScreenCoord", camera, corners);
             float width = corners[3] - corners[0];
             float height = corners[4] - corners[1];
             float textureWidth = ((Number) invokePixelGrid(texture, "getWidth")).floatValue();
@@ -1325,6 +1432,8 @@ public final class LauncherSettingBridge {
                 if ("getTextureName".equals(name) || "mode".equals(name)) types = INT_GEOMETRY_ARG;
                 else if ("bb".equals(name)) types = STRING_GEOMETRY_ARG;
                 else if ("setTranslate".equals(name) || "setScale".equals(name)) types = FLOAT_GEOMETRY_ARGS;
+                else if ("getCornerPointScreenCoord".equals(name)) types = new Class<?>[] {
+                        Class.forName("com.smartisanos.smengine.Camera"), float[].class};
                 selected = type.getMethod(name, types);
                 methods.put(key, selected);
             }
@@ -1371,18 +1480,25 @@ public final class LauncherSettingBridge {
             // Desktop options are 12 (3x4) and 20 (4x5); legacy keys are compatibility-only.
             if (sourceMode != 12 && sourceMode != 9) return;
             Object parent = invokePixelGrid(cell, "getParent");
-            if (parent == null || !Class.forName("com.smartisanos.launcher.view.b.M")
+            if (parent == null) return;
+            boolean dock = Class.forName("com.smartisanos.launcher.view.V").isInstance(parent);
+            if (!dock && !Class.forName("com.smartisanos.launcher.view.b.M")
                     .isInstance(parent)) return;
             float factor = 1f;
+            float size = 1f;
             if (displayMode == 13 || displayMode == 10) {
                 Class<?> constants = Class.forName("com.smartisanos.launcher.data.Constants");
                 Method mode = pixelGridMethod(constants, "mode", 1);
                 Object source = mode.invoke(null, sourceMode);
                 Object target = mode.invoke(null, displayMode);
-                float sx = geometryFloat(target, "page_width") / geometryFloat(source, "page_width");
-                float sy = geometryFloat(target, "page_height") / geometryFloat(source, "page_height");
+                // Dock CellAnimation scales by cell dimensions; pages scale by page dimensions.
+                String width = dock ? "cell_width" : "page_width";
+                String height = dock ? "cell_height" : "page_height";
+                float sx = geometryFloat(target, width) / geometryFloat(source, width);
+                float sy = geometryFloat(target, height) / geometryFloat(source, height);
                 if (sx <= 0f || sy <= 0f) return;
                 factor = sx / sy;
+                if (dock) size = 1.15f;
             }
             Object[] nodes = (Object[]) readGeometryField(cell, "sc");
             for (int slot : new int[] {0, 7}) {
@@ -1391,19 +1507,21 @@ public final class LauncherSettingBridge {
                 Object scale = invokePixelGrid(node, "getScale");
                 float x = geometryFloat(scale, "x"), y = geometryFloat(scale, "y");
                 float[] previous = OVERVIEW_ICON_FACTORS.get(node);
-                // Rebinding an ActiveIcon can replace its scale between mode changes.
-                // Only undo our own correction when that corrected scale still exists.
-                float baseY = previous != null
-                        && Math.abs(x - previous[1]) < 0.001f
-                        && Math.abs(y - previous[2]) < 0.001f ? previous[0] : y;
-                float targetY = baseY * factor;
-                if (Math.abs(targetY - y) > 0.001f) {
-                    invokePixelGrid(node, "setScale", Float.valueOf(x), Float.valueOf(targetY),
+                // Undo only our own scale; an ActiveIcon rebind supplies a new baseline.
+                boolean unchanged = previous != null
+                        && Math.abs(x - previous[2]) < 0.001f
+                        && Math.abs(y - previous[3]) < 0.001f;
+                float baseX = unchanged ? previous[0] : x;
+                float baseY = unchanged ? previous[1] : y;
+                float targetX = baseX * size;
+                float targetY = baseY * size * factor;
+                if (Math.abs(targetX - x) > 0.001f || Math.abs(targetY - y) > 0.001f) {
+                    invokePixelGrid(node, "setScale", Float.valueOf(targetX), Float.valueOf(targetY),
                             Float.valueOf(geometryFloat(scale, "z")));
                     invokePixelGrid(node, "updateGeometricState");
                 }
-                if (factor == 1f) OVERVIEW_ICON_FACTORS.remove(node);
-                else OVERVIEW_ICON_FACTORS.put(node, new float[] {baseY, x, targetY});
+                if (factor == 1f && size == 1f) OVERVIEW_ICON_FACTORS.remove(node);
+                else OVERVIEW_ICON_FACTORS.put(node, new float[] {baseX, baseY, targetX, targetY});
             }
         } catch (Exception error) {
             Log.w(TAG, "OVERVIEW_ICON_ASPECT_FAILED", error);

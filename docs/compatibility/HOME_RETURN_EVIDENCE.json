@@ -1,0 +1,532 @@
+{
+  "date": "2026-10-13",
+  "source": "saved October11/12 samples; no new device work",
+  "time_origin": "before ADB return-input injection; snapshot timing envelope, not precise panel presentation",
+  "nova_smartisan_early_handoff": {
+    "source_dirs": ["nova-fixed-gesture", "main-probe-gesture"],
+    "layer_rule": "Wallpaper BBQ wrapper has nonempty visible_rects while the named HOME pixel layer has empty visible_rects",
+    "limits": "SurfaceFlinger sampling windows are not panel-present durations; RecentsActivity can also have visible area; user reports Nova visual result normal",
+    "groups": [
+      {
+        "launcher": "Nova 8.0.18",
+        "home_pixel_layer": "com.teslacoilsw.launcher/com.teslacoilsw.launcher.NovaLauncher#0",
+        "apk_sha256": "262535b90196c651557c1b63d78b80f06d80434dd4e8aa9706639b1e5e9e630b",
+        "rounds": [
+          {"round": 0, "wallpaper_without_home_sample_ms": [[330, 420]], "first_home_visible_sample_ms": [510, 550]},
+          {"round": 1, "wallpaper_without_home_sample_ms": [[280, 320], [380, 430]], "first_home_visible_sample_ms": [480, 510]},
+          {"round": 2, "wallpaper_without_home_sample_ms": [[190, 240], [310, 380]], "first_home_visible_sample_ms": [450, 490]}
+        ]
+      },
+      {
+        "launcher": "Smartisan main probe",
+        "home_pixel_layer": "SurfaceView[smt_launcher](BLAST)#0",
+        "apk_sha256": "ab16767629d1cfb96d75bea022e423a6ec330c44512c780010d502e913ffc8e3",
+        "rounds": [
+          {"round": 0, "wallpaper_without_home_sample_ms": [[270, 380]], "first_home_visible_sample_ms": [500, 530]},
+          {"round": 1, "wallpaper_without_home_sample_ms": [[260, 320], [390, 440]], "first_home_visible_sample_ms": [500, 530]},
+          {"round": 2, "wallpaper_without_home_sample_ms": [[220, 260], [330, 380]], "first_home_visible_sample_ms": [470, 510]}
+        ]
+      }
+    ]
+  },
+  "groups": [
+    {
+      "label": "oppo-fixed-gesture",
+      "method": "gesture",
+      "apk_sha256_before": "765da86bf41a20fbf68c49f8bb1e10b32999504087986a5e854d9e355c47fa60",
+      "apk_sha256_after": "765da86bf41a20fbf68c49f8bb1e10b32999504087986a5e854d9e355c47fa60",
+      "pid_stable": true,
+      "rounds": [
+        {
+          "round": 0,
+          "contract_ms": null,
+          "wallpaper_visible_sample_ms": [
+            370.0,
+            460.0
+          ],
+          "selected_markers": []
+        },
+        {
+          "round": 1,
+          "contract_ms": null,
+          "wallpaper_visible_sample_ms": [
+            250.0,
+            310.0
+          ],
+          "selected_markers": []
+        },
+        {
+          "round": 2,
+          "contract_ms": null,
+          "wallpaper_visible_sample_ms": [
+            190.0,
+            260.0
+          ],
+          "selected_markers": []
+        }
+      ]
+    },
+    {
+      "label": "oppo-fixed-threebutton",
+      "method": "threebutton",
+      "apk_sha256_before": "765da86bf41a20fbf68c49f8bb1e10b32999504087986a5e854d9e355c47fa60",
+      "apk_sha256_after": "765da86bf41a20fbf68c49f8bb1e10b32999504087986a5e854d9e355c47fa60",
+      "pid_stable": true,
+      "rounds": [
+        {
+          "round": 0,
+          "contract_ms": null,
+          "wallpaper_visible_sample_ms": null,
+          "selected_markers": []
+        },
+        {
+          "round": 1,
+          "contract_ms": null,
+          "wallpaper_visible_sample_ms": null,
+          "selected_markers": []
+        },
+        {
+          "round": 2,
+          "contract_ms": null,
+          "wallpaper_visible_sample_ms": null,
+          "selected_markers": []
+        }
+      ]
+    },
+    {
+      "label": "main-probe-gesture",
+      "method": "buffer-probe",
+      "apk_sha256_before": "ab16767629d1cfb96d75bea022e423a6ec330c44512c780010d502e913ffc8e3",
+      "apk_sha256_after": "ab16767629d1cfb96d75bea022e423a6ec330c44512c780010d502e913ffc8e3",
+      "pid_stable": true,
+      "rounds": [
+        {
+          "round": 0,
+          "contract_ms": 386.201,
+          "wallpaper_visible_sample_ms": [
+            270.0,
+            380.0
+          ],
+          "selected_markers": [
+            [
+              386.201,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true component=true user=true callback=true"
+            ],
+            [
+              387.224,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              412.605,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ],
+            [
+              421.87,
+              "BUFFER_COPY_RESULT session=4 frame=1 result=3 requested_ns=3243110871077413 presented=unknown"
+            ],
+            [
+              431.704,
+              "BUFFER_COPY_RESULT session=4 frame=2 result=3 requested_ns=3243110881495336 presented=unknown"
+            ],
+            [
+              461.179,
+              "BUFFER_COPY_RESULT session=4 frame=3 result=0 requested_ns=3243110905214644 presented=unknown"
+            ]
+          ]
+        },
+        {
+          "round": 1,
+          "contract_ms": 378.752,
+          "wallpaper_visible_sample_ms": [
+            260.0,
+            320.0
+          ],
+          "selected_markers": [
+            [
+              378.752,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true component=true user=true callback=true"
+            ],
+            [
+              385.444,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              416.843,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ],
+            [
+              424.578,
+              "BUFFER_COPY_RESULT session=5 frame=1 result=3 requested_ns=3243113443758721 presented=unknown"
+            ],
+            [
+              428.895,
+              "BUFFER_COPY_RESULT session=5 frame=2 result=3 requested_ns=3243113448626721 presented=unknown"
+            ],
+            [
+              444.396,
+              "BUFFER_COPY_RESULT session=5 frame=3 result=0 requested_ns=3243113460508259 presented=unknown"
+            ]
+          ]
+        },
+        {
+          "round": 2,
+          "contract_ms": 369.589,
+          "wallpaper_visible_sample_ms": [
+            220.0,
+            260.0
+          ],
+          "selected_markers": [
+            [
+              369.589,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true component=true user=true callback=true"
+            ],
+            [
+              373.063,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              410.907,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ],
+            [
+              421.125,
+              "BUFFER_COPY_RESULT session=6 frame=1 result=3 requested_ns=3243115920842029 presented=unknown"
+            ],
+            [
+              423.74,
+              "BUFFER_COPY_RESULT session=6 frame=2 result=3 requested_ns=3243115923520875 presented=unknown"
+            ],
+            [
+              434.136,
+              "BUFFER_COPY_RESULT session=6 frame=3 result=0 requested_ns=3243115929920798 presented=unknown"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "main-contract-stable-off",
+      "method": "contract-off",
+      "apk_sha256_before": "891c7d3a5624aee97d8ceba3ef097d7479d569565dab09e40a6be17cad287ab2",
+      "apk_sha256_after": "891c7d3a5624aee97d8ceba3ef097d7479d569565dab09e40a6be17cad287ab2",
+      "pid_stable": true,
+      "rounds": [
+        {
+          "round": 0,
+          "contract_ms": 392.61,
+          "wallpaper_visible_sample_ms": [
+            300.0,
+            390.0
+          ],
+          "selected_markers": [
+            [
+              392.61,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true component=true user=true callback=true"
+            ],
+            [
+              395.353,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              427.007,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ]
+          ]
+        },
+        {
+          "round": 1,
+          "contract_ms": 387.199,
+          "wallpaper_visible_sample_ms": [
+            250.0,
+            310.0
+          ],
+          "selected_markers": [
+            [
+              387.199,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true component=true user=true callback=true"
+            ],
+            [
+              388.875,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              435.855,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ]
+          ]
+        },
+        {
+          "round": 2,
+          "contract_ms": 379.918,
+          "wallpaper_visible_sample_ms": [
+            220.0,
+            280.0
+          ],
+          "selected_markers": [
+            [
+              379.918,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true component=true user=true callback=true"
+            ],
+            [
+              381.106,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              408.639,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "main-contract-final-on",
+      "method": "contract-on",
+      "apk_sha256_before": "891c7d3a5624aee97d8ceba3ef097d7479d569565dab09e40a6be17cad287ab2",
+      "apk_sha256_after": "891c7d3a5624aee97d8ceba3ef097d7479d569565dab09e40a6be17cad287ab2",
+      "pid_stable": true,
+      "rounds": [
+        {
+          "round": 0,
+          "contract_ms": 370.241,
+          "wallpaper_visible_sample_ms": [
+            240.0,
+            350.0
+          ],
+          "selected_markers": [
+            [
+              370.241,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true component=true user=true callback=true"
+            ],
+            [
+              374.678,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              419.326,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ],
+            [
+              420.2,
+              "GESTURE_REPLY sent=true surface=false presented=unknown"
+            ]
+          ]
+        },
+        {
+          "round": 1,
+          "contract_ms": 428.22,
+          "wallpaper_visible_sample_ms": [
+            370.0,
+            510.0
+          ],
+          "selected_markers": [
+            [
+              428.22,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true component=true user=true callback=true"
+            ],
+            [
+              431.727,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              478.612,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ],
+            [
+              479.227,
+              "GESTURE_REPLY sent=true surface=false presented=unknown"
+            ]
+          ]
+        },
+        {
+          "round": 2,
+          "contract_ms": 466.475,
+          "wallpaper_visible_sample_ms": [
+            280.0,
+            350.0
+          ],
+          "selected_markers": [
+            [
+              466.475,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true component=true user=true callback=true"
+            ],
+            [
+              467.803,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              507.258,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ],
+            [
+              507.976,
+              "GESTURE_REPLY sent=true surface=false presented=unknown"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "texture-host-on",
+      "method": "texture-on",
+      "apk_sha256_before": "b8cbe0ca3ee26db0f70481f323e3ae8387ab4ab1fdfcc85a2c40e7a3371ccb8b",
+      "apk_sha256_after": "b8cbe0ca3ee26db0f70481f323e3ae8387ab4ab1fdfcc85a2c40e7a3371ccb8b",
+      "pid_stable": true,
+      "rounds": [
+        {
+          "round": 0,
+          "contract_ms": 366.129,
+          "wallpaper_visible_sample_ms": [
+            340.0,
+            430.0
+          ],
+          "selected_markers": [
+            [
+              366.129,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true callback=true"
+            ],
+            [
+              367.56,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              416.186,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ],
+            [
+              417.588,
+              "TEXTURE_BUFFER_LATCHED presented=unknown"
+            ]
+          ]
+        },
+        {
+          "round": 1,
+          "contract_ms": 447.627,
+          "wallpaper_visible_sample_ms": [
+            250.0,
+            300.0
+          ],
+          "selected_markers": [
+            [
+              447.627,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true callback=true"
+            ],
+            [
+              450.307,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              505.415,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ],
+            [
+              506.723,
+              "TEXTURE_BUFFER_LATCHED presented=unknown"
+            ]
+          ]
+        },
+        {
+          "round": 2,
+          "contract_ms": 381.038,
+          "wallpaper_visible_sample_ms": [
+            200.0,
+            350.0
+          ],
+          "selected_markers": [
+            [
+              381.038,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true callback=true"
+            ],
+            [
+              383.022,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              431.0,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ],
+            [
+              432.945,
+              "TEXTURE_BUFFER_LATCHED presented=unknown"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "texture-host-off",
+      "method": "texture-off",
+      "apk_sha256_before": "b8cbe0ca3ee26db0f70481f323e3ae8387ab4ab1fdfcc85a2c40e7a3371ccb8b",
+      "apk_sha256_after": "b8cbe0ca3ee26db0f70481f323e3ae8387ab4ab1fdfcc85a2c40e7a3371ccb8b",
+      "pid_stable": true,
+      "rounds": [
+        {
+          "round": 0,
+          "contract_ms": 388.927,
+          "wallpaper_visible_sample_ms": [
+            190.0,
+            270.0
+          ],
+          "selected_markers": [
+            [
+              388.927,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true callback=true"
+            ],
+            [
+              389.898,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              436.65,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ]
+          ]
+        },
+        {
+          "round": 1,
+          "contract_ms": 396.24,
+          "wallpaper_visible_sample_ms": [
+            230.0,
+            370.0
+          ],
+          "selected_markers": [
+            [
+              396.24,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true callback=true"
+            ],
+            [
+              397.599,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              437.383,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ]
+          ]
+        },
+        {
+          "round": 2,
+          "contract_ms": 354.435,
+          "wallpaper_visible_sample_ms": [
+            290.0,
+            400.0
+          ],
+          "selected_markers": [
+            [
+              354.435,
+              "GESTURE_CONTRACT source=NEW_INTENT present=true callback=true"
+            ],
+            [
+              355.784,
+              "RESUME_BEGIN activity=98463685 focus=false decorVisibility=4 flags=81910300 surfaceValid=false interactive=true locked=false"
+            ],
+            [
+              406.861,
+              "GL_DRAW_COMPLETE frame=1 presented=unknown"
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

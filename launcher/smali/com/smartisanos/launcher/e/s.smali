@@ -2649,9 +2649,7 @@
 
     move-result v9
 
-    const-string v1, "#raster:v18-icon-contract:"
-
-    invoke-virtual {p1, v1}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+    invoke-static {p1}, Lcom/smartisanos/launcher/theme/IconRasterDiagnostics;->hasCurrentTextureCacheKey(Ljava/lang/String;)Z
 
     move-result v1
 
@@ -2709,9 +2707,52 @@
 
     invoke-static {p0, v3}, Lcom/smartisanos/launcher/diagnostics/StartupPageSceneDiagnostics;->stage(Ljava/lang/Object;Ljava/lang/String;)V
 
+    if-eqz v9, :cond_source_persist_required
+
+    invoke-static {p0, p3}, Lcom/smartisanos/launcher/theme/IconRasterDiagnostics;->composeUncachedStaticApplicationIconTexture(Ljava/lang/Object;I)Landroid/graphics/Bitmap;
+
+    move-result-object v3
+
+    if-eqz v3, :cond_uncached_static_source_unavailable
+
+    move-object p0, v3
+
+    const/4 v2, 0x1
+
+    goto :goto_codex_texture_ready
+
+    :cond_uncached_static_source_unavailable
+
+    invoke-static {p0}, Lcom/smartisanos/launcher/theme/IconRasterDiagnostics;->prepareUncachedStaticSource(Ljava/lang/Object;)Landroid/graphics/Bitmap;
+
+    move-result-object v3
+
+    if-nez v3, :cond_static_source_prepared
+
+    :cond_source_persist_required
+
     invoke-static {p0}, Lcom/smartisanos/launcher/theme/IconRasterDiagnostics;->iconRawSource(Ljava/lang/Object;)Landroid/graphics/Bitmap;
 
     move-result-object p2
+
+    if-eqz v9, :cond_current_static_source_unavailable
+
+    invoke-static {v10, p2, p3}, Lcom/smartisanos/launcher/theme/IconRasterDiagnostics;->composeCurrentStaticApplicationIconTexture(Ljava/lang/Object;Landroid/graphics/Bitmap;I)Landroid/graphics/Bitmap;
+
+    move-result-object v3
+
+    if-eqz v3, :cond_current_static_source_unavailable
+
+    # iconRawSource decodes a new, exclusively owned Bitmap for this call.
+    invoke-virtual {p2}, Landroid/graphics/Bitmap;->recycle()V
+
+    move-object p0, v3
+
+    const/4 v2, 0x1
+
+    goto :goto_codex_texture_ready
+
+    :cond_current_static_source_unavailable
 
     const/4 v0, 0x0
 
@@ -2831,6 +2872,11 @@
     invoke-static {p0, v3}, Lcom/smartisanos/launcher/theme/IconRasterDiagnostics;->prepareStaticSource(Ljava/lang/Object;Landroid/graphics/Bitmap;)Landroid/graphics/Bitmap;
 
     move-result-object v3
+
+    :cond_static_source_prepared
+    const/4 v0, 0x0
+
+    const/4 v2, 0x1
 
     invoke-static {v3}, Lcom/smartisanos/launcher/actions/sort/color/f;->c(Landroid/graphics/Bitmap;)Lcom/smartisanos/launcher/actions/sort/color/IconColor$ColorInfo;
 
@@ -4373,6 +4419,12 @@
     check-cast v3, Landroid/graphics/drawable/Drawable;
 
     .line 113
+    invoke-static {v2, v3}, Lcom/smartisanos/launcher/theme/IconRasterDiagnostics;->deferStartupSourceWrite(Ljava/lang/Object;Landroid/graphics/drawable/Drawable;)Z
+
+    move-result v4
+
+    if-nez v4, :goto_0
+
     new-instance v4, Lcom/smartisanos/launcher/e/r;
 
     invoke-direct {v4, v3, v2, p1}, Lcom/smartisanos/launcher/e/r;-><init>(Landroid/graphics/drawable/Drawable;Lcom/smartisanos/launcher/data/ItemInfo;Landroid/content/Context;)V
@@ -5152,6 +5204,17 @@
 
     .line 107
     invoke-static {p0}, Lcom/smartisanos/launcher/data/a/h;->a(Landroid/content/ContentValues;)Z
+
+    move-result p0
+
+    if-nez p0, :cond_5
+
+    # Retain usable in-memory bytes while reporting that persistence failed.
+    const-string v0, "LauncherIconRaster"
+
+    const-string p0, "ICON_SOURCE_DATABASE_WRITE_FAILED"
+
+    invoke-static {v0, p0}, Landroid/util/Log;->w(Ljava/lang/String;Ljava/lang/String;)I
 
     goto :cond_5
 

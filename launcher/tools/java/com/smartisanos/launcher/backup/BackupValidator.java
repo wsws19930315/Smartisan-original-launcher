@@ -1,6 +1,5 @@
 package com.smartisanos.launcher.backup;
 
-import android.graphics.BitmapFactory;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -102,6 +101,7 @@ public final class BackupValidator {
         LayoutSnapshotExporter.validate(layout);
         JSONObject settings = checkedJson(new File(output, "settings.json"), MAX_ENTRY_BYTES);
         JSONObject theme = checkedJson(new File(output, "theme.json"), 1024 * 1024L);
+        ThemeBackupCodec.validateWallpaper(theme, output);
         JSONObject icons = checkedJson(new File(output, "icons/redirects.json"), MAX_ENTRY_BYTES);
         File shortcutIndex = new File(output, "icons/shortcuts.json");
         JSONObject shortcutIcons = shortcutIndex.isFile()
@@ -159,7 +159,7 @@ public final class BackupValidator {
                 if (data.length < 8 || data[0] != (byte) 0x89 || data[1] != 0x50
                         || data[2] != 0x4e || data[3] != 0x47 || data[4] != 0x0d
                         || data[5] != 0x0a || data[6] != 0x1a || data[7] != 0x0a
-                        || BitmapFactory.decodeByteArray(data, 0, data.length) == null) {
+                        || !IconBackupCodec.isValidImage(data, 1, Integer.MAX_VALUE)) {
                     Log.w("DesktopBackup", "RESTORE_CUSTOM_ICON_INVALID fallback=original file=" + name);
                 }
             } catch (Exception unreadableIcon) {
@@ -187,9 +187,7 @@ public final class BackupValidator {
                     || data[5] != 0x0a || data[6] != 0x1a || data[7] != 0x0a) {
                 throw invalid("Portable source is not PNG");
             }
-            android.graphics.Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-            if (bitmap == null || bitmap.getWidth() < 48 || bitmap.getHeight() < 48
-                    || bitmap.getWidth() > 1024 || bitmap.getHeight() > 1024) {
+            if (!IconBackupCodec.isValidImage(data, 48, 1024)) {
                 throw invalid("Invalid portable source dimensions");
             }
             String sha256 = BackupFileUtils.hex(java.security.MessageDigest.getInstance("SHA-256").digest(data));

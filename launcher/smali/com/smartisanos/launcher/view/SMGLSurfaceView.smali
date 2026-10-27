@@ -7,6 +7,7 @@
 .field private static final log:Lcom/smartisanos/launcher/va;
 
 
+
 # direct methods
 .method static constructor <clinit>()V
     .locals 1
@@ -29,6 +30,8 @@
     .line 1
     invoke-direct {p0, p1}, Landroid/opengl/GLSurfaceView;-><init>(Landroid/content/Context;)V
 
+    invoke-static {p0}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->bindSurface(Landroid/opengl/GLSurfaceView;)V
+
     return-void
 .end method
 
@@ -37,6 +40,8 @@
 
     .line 2
     invoke-direct {p0, p1, p2}, Landroid/opengl/GLSurfaceView;-><init>(Landroid/content/Context;Landroid/util/AttributeSet;)V
+
+    invoke-static {p0}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->bindSurface(Landroid/opengl/GLSurfaceView;)V
 
     const/4 p1, 0x0
 
@@ -86,9 +91,41 @@
 .method protected onDetachedFromWindow()V
     .locals 0
 
+    invoke-static {p0}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onSurfaceDetached(Landroid/opengl/GLSurfaceView;)V
+
     .line 1
     invoke-super {p0}, Landroid/opengl/GLSurfaceView;->onDetachedFromWindow()V
 
+    return-void
+.end method
+
+.method public surfaceCreated(Landroid/view/SurfaceHolder;)V
+    .locals 0
+    invoke-static {p0}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onSurfaceCreated(Landroid/opengl/GLSurfaceView;)V
+    invoke-super {p0, p1}, Landroid/opengl/GLSurfaceView;->surfaceCreated(Landroid/view/SurfaceHolder;)V
+    return-void
+.end method
+
+.method public surfaceDestroyed(Landroid/view/SurfaceHolder;)V
+    .locals 0
+    invoke-static {p0}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onSurfaceDestroyed(Landroid/opengl/GLSurfaceView;)V
+    invoke-super {p0, p1}, Landroid/opengl/GLSurfaceView;->surfaceDestroyed(Landroid/view/SurfaceHolder;)V
+    return-void
+.end method
+
+.method public surfaceChanged(Landroid/view/SurfaceHolder;III)V
+    .locals 0
+    invoke-static {p0, p3, p4}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onSurfaceSizeChanged(Landroid/opengl/GLSurfaceView;II)V
+    invoke-super {p0, p1, p2, p3, p4}, Landroid/opengl/GLSurfaceView;->surfaceChanged(Landroid/view/SurfaceHolder;III)V
+    invoke-static {p0}, Lcom/smartisanos/launcher/theme/LauncherSettingBridge;->applyLauncherSurfaceRefresh(Landroid/view/SurfaceView;)V
+    return-void
+.end method
+
+.method public surfaceRedrawNeededAsync(Landroid/view/SurfaceHolder;Ljava/lang/Runnable;)V
+    .locals 0
+    invoke-static {p0, p2}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->traceSurfaceRedraw(Landroid/opengl/GLSurfaceView;Ljava/lang/Runnable;)Ljava/lang/Runnable;
+    move-result-object p2
+    invoke-super {p0, p1, p2}, Landroid/opengl/GLSurfaceView;->surfaceRedrawNeededAsync(Landroid/view/SurfaceHolder;Ljava/lang/Runnable;)V
     return-void
 .end method
 
@@ -107,5 +144,22 @@
     .line 1
     invoke-super {p0}, Landroid/opengl/GLSurfaceView;->onResume()V
 
+    return-void
+.end method
+
+.method protected onWindowVisibilityChanged(I)V
+    .locals 0
+    invoke-super {p0, p1}, Landroid/opengl/GLSurfaceView;->onWindowVisibilityChanged(I)V
+    invoke-static {p0, p1}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onWindowVisibilityChanged(Landroid/opengl/GLSurfaceView;I)V
+    if-nez p1, :launcher_refresh_visibility_done
+    invoke-static {p0}, Lcom/smartisanos/launcher/theme/LauncherSettingBridge;->applyLauncherSurfaceRefresh(Landroid/view/SurfaceView;)V
+    :launcher_refresh_visibility_done
+    return-void
+.end method
+
+.method protected onAttachedToWindow()V
+    .locals 0
+    invoke-super {p0}, Landroid/opengl/GLSurfaceView;->onAttachedToWindow()V
+    invoke-static {p0}, Lcom/smartisanos/launcher/gesture/LauncherHomeCompat;->onSurfaceAttached(Landroid/opengl/GLSurfaceView;)V
     return-void
 .end method

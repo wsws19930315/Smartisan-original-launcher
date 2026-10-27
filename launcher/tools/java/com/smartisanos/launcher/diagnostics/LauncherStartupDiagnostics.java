@@ -26,6 +26,10 @@ public final class LauncherStartupDiagnostics {
     private static String sActivityIdentity = "none";
     private static String sState = "state=unavailable";
     private static boolean sEnabled;
+    private static volatile boolean sStartupComplete;
+    private static volatile boolean sSceneFrameProbe;
+    private static long sFrameStart, sFrameCpuStart, sPreviousFrameEnd;
+    private static int sSceneFrameCount;
 
     private LauncherStartupDiagnostics() {
     }
@@ -35,6 +39,10 @@ public final class LauncherStartupDiagnostics {
         sContext = context != null ? context : activity;
         sEnabled = isEnabled(sContext);
         SEEN.clear();
+        sStartupComplete = false;
+        sSceneFrameProbe = false;
+        sPreviousFrameEnd = 0;
+        sSceneFrameCount = 0;
         sLaunchStartElapsed = SystemClock.elapsedRealtime();
         sActivityIdentity = activity == null
                 ? "none"
@@ -49,7 +57,32 @@ public final class LauncherStartupDiagnostics {
     }
 
     public static synchronized void mark(String marker) {
+        if ("LAUNCH_SCENE_TASK_BEGIN".equals(marker)) sSceneFrameProbe = true;
+        if ("LAUNCH_PAGE_READY".equals(marker)) sStartupComplete = true;
         markLocked(marker);
+    }
+
+    /** GL-thread timings only. The gap includes swap/wait/scheduling, not presentation proof. */
+    public static void rendererBegin() {
+        if (!sEnabled || sStartupComplete) return;
+        sFrameStart = SystemClock.elapsedRealtime();
+        sFrameCpuStart = SystemClock.currentThreadTimeMillis();
+    }
+
+    public static void rendererEnd() {
+        if (!sEnabled || sFrameStart == 0) return;
+        long end = SystemClock.elapsedRealtime();
+        if (sSceneFrameProbe && sSceneFrameCount < 12) {
+            Log.i(TAG, "LAUNCH_SCENE_FRAME n=" + (++sSceneFrameCount)
+                    + " startElapsed=" + sFrameStart + " endElapsed=" + end
+                    + " wallMs=" + (end - sFrameStart)
+                    + " cpuMs=" + (SystemClock.currentThreadTimeMillis() - sFrameCpuStart)
+                    + " precedingGapMs=" + (sPreviousFrameEnd == 0 ? -1
+                            : sFrameStart - sPreviousFrameEnd));
+        }
+        sPreviousFrameEnd = end;
+        sFrameStart = 0;
+        if (sStartupComplete) sSceneFrameProbe = false;
     }
 
     private static void markLocked(String marker) {

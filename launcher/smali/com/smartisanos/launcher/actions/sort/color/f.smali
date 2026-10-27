@@ -825,7 +825,7 @@
 .end method
 
 .method public static d(Landroid/graphics/Bitmap;)Lcom/smartisanos/launcher/actions/sort/color/IconColor$ColorInfo;
-    .locals 12
+    .locals 14
 
     if-nez p0, :cond_1
 
@@ -859,6 +859,39 @@
 
     move-result v1
 
+    # The original c() path classifies a 64x64 sample. Bound the transient
+    # pixel buffer to that size; larger direct d() inputs retain their old path.
+    const/4 v12, 0x0
+
+    const/16 v2, 0x40
+
+    if-gt v0, v2, :pixels_ready
+
+    if-gt v1, v2, :pixels_ready
+
+    mul-int v2, v0, v1
+
+    new-array v12, v2, [I
+
+    move-object v2, p0
+
+    move-object v3, v12
+
+    const/4 v4, 0x0
+
+    move v5, v0
+
+    const/4 v6, 0x0
+
+    const/4 v7, 0x0
+
+    move v8, v0
+
+    move v9, v1
+
+    invoke-virtual/range {v2 .. v9}, Landroid/graphics/Bitmap;->getPixels([IIIIIII)V
+
+    :pixels_ready
     .line 5
     new-instance v2, Lcom/smartisanos/launcher/actions/sort/color/d;
 
@@ -890,9 +923,23 @@
     if-ge v7, v1, :cond_4
 
     .line 7
+    if-eqz v12, :read_single_pixel
+
+    # Keep the original x-major traversal and all classification/tie rules.
+    mul-int v13, v7, v0
+
+    add-int/2addr v13, v6
+
+    aget v10, v12, v13
+
+    goto :pixel_ready
+
+    :read_single_pixel
     invoke-virtual {p0, v6, v7}, Landroid/graphics/Bitmap;->getPixel(II)I
 
     move-result v10
+
+    :pixel_ready
 
     shr-int/lit8 v11, v10, 0x18
 

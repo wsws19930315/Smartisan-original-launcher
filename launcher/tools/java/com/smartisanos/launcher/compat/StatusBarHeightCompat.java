@@ -77,6 +77,10 @@ public final class StatusBarHeightCompat {
 
     private StatusBarHeightCompat() {}
 
+    private static final class Api29 {
+        static DisplayCutout cutout(Display display) { return display.getCutout(); }
+    }
+
     /** Called before layout and scene initialization so all geometry uses the final height. */
     public static int resolveStartupHeight(Context context, int originalSystemHeight) {
         if (context == null) return Math.max(0, originalSystemHeight);
@@ -94,6 +98,31 @@ public final class StatusBarHeightCompat {
             systemHeight = Math.max(systemHeight, cache.getInt(KEY_SYSTEM_HEIGHT, 0));
             cutoutBottom = Math.max(0, cache.getInt(KEY_CUTOUT_BOTTOM, 0));
             hasCutout = cache.getBoolean(KEY_HAS_CUTOUT, false);
+        } else if (Build.VERSION.SDK_INT >= 29) {
+            // First installation has no Insets cache. Resolve the display cutout before
+            // constructing the scene, instead of cold-restarting it immediately afterward.
+            try {
+                WindowManager manager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+                Display display = manager == null ? null : manager.getDefaultDisplay();
+                if (display != null) {
+                    DisplayMetrics real = new DisplayMetrics();
+                    display.getRealMetrics(real);
+                    DisplayCutout cutout = Api29.cutout(display);
+                    if (cutout != null && real.widthPixels > 0) {
+                        int top = Math.max(0, cutout.getSafeInsetTop());
+                        for (Rect rect : cutout.getBoundingRects()) {
+                            if (rect != null && !rect.isEmpty() && rect.top <= 1
+                                    && rect.bottom <= real.heightPixels / 4) {
+                                top = Math.max(top, rect.bottom);
+                            }
+                        }
+                        cutoutBottom = Math.round(top * (sceneWidth / (float) real.widthPixels));
+                        hasCutout = cutoutBottom > 0;
+                    }
+                }
+            } catch (RuntimeException error) {
+                Log.w(TAG, "startup_display_cutout_unavailable", error);
+            }
         }
         Settings settings = readSettings(context);
         float sceneDensity = sceneDensity(context, sceneWidth);
@@ -210,7 +239,8 @@ public final class StatusBarHeightCompat {
         long requested = (long) base + extra;
         if (autoEnabled) requested = Math.max(requested, safeFloor);
         else requested = Math.max(0L, requested);
-        int upper = Math.max(safeFloor, system + Math.max(0, maxExtra));
+        // A tall cutout must retain its visual gap even when statusBarTop excludes that cutout.
+        int upper = Math.max(base, Math.max(safeFloor, system + Math.max(0, maxExtra)));
         return (int) Math.min(requested, upper);
     }
 

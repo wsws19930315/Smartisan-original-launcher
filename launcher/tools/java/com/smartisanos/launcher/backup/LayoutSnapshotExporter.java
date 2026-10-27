@@ -149,6 +149,10 @@ public final class LayoutSnapshotExporter {
                 throw new IllegalArgumentException("Invalid component identity");
             }
         }
+        FolderTopologyValidator.ValidationResult topology = FolderTopologyValidator.validate(root);
+        if (!topology.valid) {
+            throw new IllegalArgumentException("Invalid folder topology: " + topology.errorMessage);
+        }
     }
 
     /** The original database preallocates 1000 page rows, including unused -1 slots. */

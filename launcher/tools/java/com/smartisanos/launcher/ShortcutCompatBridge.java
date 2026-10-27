@@ -243,7 +243,9 @@ public final class ShortcutCompatBridge {
     }
 
     public static boolean suppressLegacyPf() {
-        return android.os.Build.VERSION.SDK_INT >= 26;
+        // Shortcut queries require API 25; never reconcile unavailable results as removals.
+        int sdk = android.os.Build.VERSION.SDK_INT;
+        return sdk < 25 || sdk >= 26;
     }
 
     /** Checks the target profile's real pinned shortcut before a restore creates a Cell. */

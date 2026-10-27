@@ -59,6 +59,16 @@ public final class OriginalLoadingContentFactory {
         View decor = window.getDecorView();
         int visibility = decor.getSystemUiVisibility()
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+        // Ordinary startup still uses the original fullscreen loading geometry.
+        // Declare its transparent bar backing before SystemUI restores the bar.
+        if (context instanceof android.app.Activity
+                && "com.smartisanos.launcher.Launcher".equals(context.getClass().getName())
+                && "".equals(message)
+                && !LauncherColdReloadCoordinator.ownsInitializationLoadingWindow()) {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(android.graphics.Color.TRANSPARENT);
+        }
         if (MaintainedLauncherSettingsHost.isThemeChangingMessage(context, message)) {
             // Hiding SystemUI here animates its black background over the dim root.
             // Keep the bar visible and draw the original loading root behind it instead.

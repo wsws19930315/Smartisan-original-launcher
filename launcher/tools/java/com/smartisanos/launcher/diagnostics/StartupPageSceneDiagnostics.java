@@ -37,7 +37,7 @@ public final class StartupPageSceneDiagnostics {
         }
         PageSession session = new PageSession(pageInfo);
         CURRENT_PAGE.set(session);
-        Log.i(TAG, "PAGE_INIT_BEGIN pageIndex=" + session.pageIndex
+        Log.i(TAG, "PAGE_INIT_BEGIN elapsedRealtime=" + SystemClock.elapsedRealtime() + " pageIndex=" + session.pageIndex
                 + " pageStatus=" + session.pageStatus
                 + " itemCount=pending factoryOrdinal=" + ordinal);
     }
@@ -64,6 +64,21 @@ public final class StartupPageSceneDiagnostics {
         if (session != null) {
             session.stage(item, stage);
         }
+    }
+
+    /** Nested owner timings do not change the existing mutually exclusive cell stages. */
+    public static long detailBegin() {
+        return CURRENT_PAGE.get() == null ? 0L : SystemClock.elapsedRealtimeNanos();
+    }
+
+    public static void detailEnd(Object item, String operation, long began) {
+        if (began == 0L) return;
+        PageSession session = CURRENT_PAGE.get();
+        if (session == null || !session.hasActiveItem(item)) return;
+        Long previous = session.detailNanos.get(operation);
+        session.detailNanos.put(operation, (previous == null ? 0L : previous)
+                + SystemClock.elapsedRealtimeNanos() - began);
+        increment(session.detailCount, operation);
     }
 
     public static void textureCacheResult(Object item, boolean hit) {
@@ -112,6 +127,8 @@ public final class StartupPageSceneDiagnostics {
         final Map<String, Integer> bitmapComposeByPackage = new HashMap<String, Integer>();
         final Map<String, Integer> shadowComposeByPackage = new HashMap<String, Integer>();
         final Map<String, Integer> textureCreateByPackage = new HashMap<String, Integer>();
+        final Map<String, Long> detailNanos = new HashMap<String, Long>();
+        final Map<String, Integer> detailCount = new HashMap<String, Integer>();
         int textureCacheHit;
         int textureCacheMiss;
         int textureCreateCount;
@@ -205,6 +222,8 @@ public final class StartupPageSceneDiagnostics {
 
         void finish() {
             long durationMs = SystemClock.elapsedRealtime() - startMs;
+            Log.i(TAG, "PAGE_OWNER_DETAIL pageIndex=" + pageIndex
+                    + " durationNanos=" + detailNanos + " count=" + detailCount);
             long total = 0L;
             long min = Long.MAX_VALUE;
             long max = 0L;
@@ -218,7 +237,7 @@ public final class StartupPageSceneDiagnostics {
                 }
             }
             long average = cells.isEmpty() ? 0L : total / cells.size();
-            Log.i(TAG, "PAGE_INIT_END pageIndex=" + pageIndex
+            Log.i(TAG, "PAGE_INIT_END elapsedRealtime=" + SystemClock.elapsedRealtime() + " pageIndex=" + pageIndex
                     + " pageStatus=" + pageStatus
                     + " itemCount=" + itemCount
                     + " durationMs=" + durationMs

@@ -8563,7 +8563,7 @@
 .end method
 
 .method protected fn()V
-    .locals 14
+    .locals 15
 
     .line 1
     iget-object v0, p0, Lcom/smartisanos/launcher/view/b/M;->Nn:Lcom/smartisanos/launcher/data/LayoutProperty;
@@ -8574,6 +8574,9 @@
     iget v0, v0, Lcom/smartisanos/launcher/data/LayoutProperty;->page_cell_row_num:I
 
     const/4 v2, 0x0
+
+    # Own this snapshot only for this Folder page creation, never across opens.
+    const/4 v14, 0x0
 
     move v9, v2
 
@@ -8699,11 +8702,31 @@
 
     .line 19
     :goto_3
+    instance-of v4, p0, Lcom/smartisanos/launcher/view/b/a;
+
+    if-eqz v4, :page_positions_reload
+
+    if-nez v14, :page_positions_reuse
+
+    :page_positions_reload
     iget-object v4, p0, Lcom/smartisanos/launcher/view/b/M;->dl:Lcom/smartisanos/launcher/view/b/fa;
 
     invoke-virtual {v4}, Lcom/smartisanos/launcher/view/b/fa;->ir()[Lcom/smartisanos/smengine/a/j;
 
     move-result-object v4
+
+    instance-of v5, p0, Lcom/smartisanos/launcher/view/b/a;
+
+    if-eqz v5, :page_positions_ready
+
+    move-object v14, v4
+
+    goto :page_positions_ready
+
+    :page_positions_reuse
+    move-object v4, v14
+
+    :page_positions_ready
 
     .line 20
     aget-object v4, v4, v11
@@ -8713,10 +8736,17 @@
 
     iget v4, v4, Lcom/smartisanos/smengine/a/j;->y:F
 
+    # ir() already adapted this Folder page snapshot. Preserve raw/failed adaptation fallback.
+    if-eqz v14, :page_position_adjust_y
+    sget-object v7, Lcom/smartisanos/launcher/data/Constants;->pageCellCenterPoints:[Lcom/smartisanos/smengine/a/j;
+    if-ne v14, v7, :page_position_y_ready
+
+    :page_position_adjust_y
     invoke-static {p0, v9, v10, v4}, Lcom/smartisanos/launcher/data/FolderCellPositionAdapter;->adjustY(Ljava/lang/Object;IIF)F
 
     move-result v4
 
+    :page_position_y_ready
     iget v6, p0, Lcom/smartisanos/launcher/view/b/M;->WG:F
 
     invoke-virtual {v3, v5, v4, v6}, Lcom/smartisanos/smengine/SceneNode;->setTranslate(FFF)V

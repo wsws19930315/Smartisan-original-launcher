@@ -92,7 +92,10 @@ public final class VerticalGestureDirectionConfig {
         if (sGestureModeReversed) {
             return startY > 96.0f * density && startY < height - 280.0f * density;
         }
-        return startY > 280.0f * density && startY < height - 96.0f * density;
+        // Dock-origin swipes arrive inside the app surface. Reserving 96dp here
+        // rejects the documented Dock entry, especially on shorter displays.
+        // System navigation outside this surface still belongs to the system.
+        return startY > 280.0f * density && startY < height;
     }
 
     public static synchronized boolean canOpenSearchNow() {
@@ -131,6 +134,11 @@ public final class VerticalGestureDirectionConfig {
      * bar.  Mirror only this positional gate; velocity, distance, angle and
      * single-direction checks remain in the original FlingUpGesture.
      */
+    public static synchronized boolean passesSearchFinishRegion(float finishY, int screenHeight) {
+        float height = Math.max(1, screenHeight);
+        return sGestureModeReversed ? finishY >= height * 0.25f : finishY <= height * 0.75f;
+    }
+
     private static boolean readReversed(Context context) {
         if (context == null) return false;
         try {

@@ -16,6 +16,9 @@ import java.util.Map;
 /** Immutable metadata only. Search enrichment never changes automatic source identity. */
 public final class IconLibraryCatalog {
     private static volatile IconLibraryCatalog instance;
+    // Publication/invalidation only; never hold this lock across IO or package queries.
+    private static final Object publicationLock=new Object();
+    private static long installedGeneration;
     private static final String[] EMPTY = new String[0];
     public final List<IconLibrarySearchIndex.Entry> entries;
     public final String revision, sourceRevision;
@@ -76,7 +79,9 @@ public final class IconLibraryCatalog {
         return Collections.unmodifiableMap(result);
     }
     public static IconLibraryCatalog peek() {return instance;}
-    public static void invalidateInstalledLabels() {instance=null;}
+    public static void invalidateInstalledLabels() {
+        synchronized(publicationLock) {++installedGeneration;instance=null;}
+    }
 
     private static final class InstalledLabel {
         final String name,category; final String[] pinyin;
@@ -122,7 +127,11 @@ public final class IconLibraryCatalog {
         if(ready!=null) return ready;
         if(Looper.myLooper()==Looper.getMainLooper()) throw new IllegalStateException("Catalog IO on MAIN");
         synchronized(IconLibraryCatalog.class) {
-            if(instance!=null) return instance;
+            final long generation;
+            synchronized(publicationLock) {
+                if(instance!=null) return instance;
+                generation=installedGeneration;
+            }
             long started=android.os.SystemClock.uptimeMillis();
             InputStream stream=context.getAssets().open("icons/search-index.json");
             try {
@@ -139,9 +148,14 @@ public final class IconLibraryCatalog {
                     while(names.hasNext()) {String name=names.next();reviewed.put(name,strings(pronunciation.getJSONArray(name)));}
                 }
                 IconPinyin.configure(reviewed);
-                instance=new IconLibraryCatalog(json,installedLabels(context));
-                android.util.Log.i("SmartisanPerf","ICON_CATALOG_READY rows="+instance.entries.size()+" durationMs="+(android.os.SystemClock.uptimeMillis()-started));
-                return instance;
+                IconLibraryCatalog built=new IconLibraryCatalog(json,installedLabels(context));
+                synchronized(publicationLock) {
+                    if(generation!=installedGeneration)
+                        throw new android.os.OperationCanceledException("Catalog invalidated during build");
+                    instance=built;
+                }
+                android.util.Log.i("SmartisanPerf","ICON_CATALOG_READY rows="+built.entries.size()+" durationMs="+(android.os.SystemClock.uptimeMillis()-started));
+                return built;
             } finally {stream.close();}
         }
     }

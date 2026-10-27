@@ -2,13 +2,12 @@ package com.smartisanos.launcher.backup;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.util.Log;
 
 import com.smartisanos.home.settings.icons.IconPackManager;
 import com.smartisanos.home.settings.icons.IconSourceManager;
 import com.smartisanos.launcher.theme.MaintainedLauncherSettingsHost;
+import com.smartisanos.launcher.data.redirectIcon.RedirectIconDB;
 import com.smartisanos.launcher.theme.IconRasterDiagnostics;
 import com.smartisanos.launcher.theme.MaintainedLauncherSettingsHost.ApplyReason;
 
@@ -33,7 +32,7 @@ public final class RestoreIconSourceReconciler {
      * download cache.  Final Launcher textures remain derived data and are never
      * put in the archive.
      */
-    public static JSONObject encodePortableSources(Context context, File outputDirectory)
+    public static JSONObject encodePortableSources(Context context, File outputDirectory, JSONObject layout, JSONObject icons)
             throws Exception {
         BackupFileUtils.ensureDirectory(outputDirectory);
         JSONObject root = new JSONObject();
@@ -41,6 +40,9 @@ public final class RestoreIconSourceReconciler {
         JSONArray records = new JSONArray();
         File cache = new File(context.getFilesDir(), CACHE_DIR);
         File[] files = cache.listFiles();
+        HashSet<String> required = requiredSourceFiles(layout, icons);
+        collectAutomaticSourceFiles(context, layout, icons, required);
+        int skipped = 0;
         long totalBytes = 0L;
         if (files != null) {
             java.util.Arrays.sort(files, new java.util.Comparator<File>() {
@@ -51,6 +53,9 @@ public final class RestoreIconSourceReconciler {
             for (File source : files) {
                 String name = source.getName();
                 if (!source.isFile() || !isPortableSourceName(name)) continue;
+                // Historical hash filenames do not carry their source identity. Keep
+                // that small compatibility set until it can be mapped without guessing.
+                if (!required.contains(name) && !name.matches("[0-9a-f]+\\.png")) { skipped++; continue; }
                 if (source.length() <= 0 || source.length() > MAX_SOURCE_BYTES) {
                     Log.w(TAG, "BACKUP_ICON_SOURCE_REJECTED file=" + name
                             + " bytes=" + source.length());
@@ -70,8 +75,60 @@ public final class RestoreIconSourceReconciler {
             }
         }
         root.put("records", records);
-        Log.i(TAG, "BACKUP_ICON_SOURCES count=" + records.length() + " bytes=" + totalBytes);
+        Log.i(TAG, "BACKUP_ICON_SOURCES count=" + records.length() + " bytes=" + totalBytes
+                + " unreferencedSkipped=" + skipped);
         return root;
+    }
+
+    /** Include saved choices even if their apps currently have no desktop cell. */
+    static HashSet<String> requiredSourceFiles(JSONObject layout, JSONObject icons) {
+        HashSet<String> names = new HashSet<String>();
+        JSONArray items = layout == null ? null : layout.optJSONArray("items");
+        if (items != null) for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.optJSONObject(i);
+            if (item != null) addSourceIdentity(names, item.optString("packageName", ""));
+        }
+        JSONArray records = icons == null ? null : icons.optJSONArray("records");
+        if (records != null) for (int i = 0; i < records.length(); i++) {
+            JSONObject record = records.optJSONObject(i);
+            if (record == null) continue;
+            addSourceIdentity(names, record.optString("packageName", ""));
+            String drawable = record.optString("drawableName", "");
+            if (drawable.startsWith(RedirectIconDB.MODE_RESOURCE + ":")) {
+                addSourceIdentity(names, drawable.substring((RedirectIconDB.MODE_RESOURCE + ":").length()));
+            }
+        }
+        return names;
+    }
+
+    private static void collectAutomaticSourceFiles(Context context, JSONObject layout,
+            JSONObject icons, HashSet<String> names) {
+        HashSet<String> identities = new HashSet<String>();
+        for (JSONObject source : new JSONObject[]{layout, icons}) {
+            if (source == null) continue;
+            JSONArray records = source.optJSONArray(source == layout ? "items" : "records");
+            if (records == null) continue;
+            for (int i = 0; i < records.length(); i++) {
+                JSONObject record = records.optJSONObject(i);
+                if (record == null) continue;
+                String pkg = record.optString("packageName", "");
+                String component = record.optString("componentName", "");
+                if (pkg.length() == 0 || !identities.add(pkg + ";" + component)) continue;
+                // Reuse the existing candidate and OEM alias owners, never resolve a bitmap
+                // or schedule a download merely to decide what the archive must preserve.
+                for (String id : MaintainedLauncherSettingsHost.desktopBackupImprovedSourceIds(context, pkg, component)) {
+                    addSourceIdentity(names, id);
+                }
+            }
+        }
+    }
+
+    private static void addSourceIdentity(HashSet<String> names, String identity) {
+        if (identity == null || identity.length() == 0) return;
+        // Existing online downloads use hash names; library-selected raw sources
+        // use sourceId names. Preserve both owners and historical filenames.
+        names.add(Integer.toHexString(identity.hashCode()) + ".png");
+        if (isPortableSourceName(identity + ".png")) names.add(identity + ".png");
     }
 
     /** Atomically overlays archived raw sources on the current persistent cache. */
@@ -180,9 +237,7 @@ public final class RestoreIconSourceReconciler {
                 || data[0] != (byte) 0x89 || data[1] != 0x50 || data[2] != 0x4e
                 || data[3] != 0x47 || data[4] != 0x0d || data[5] != 0x0a
                 || data[6] != 0x1a || data[7] != 0x0a) return false;
-        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-        return bitmap != null && bitmap.getWidth() >= 48 && bitmap.getHeight() >= 48
-                && bitmap.getWidth() <= 1024 && bitmap.getHeight() <= 1024;
+        return IconBackupCodec.isValidImage(data, 48, 1024);
     }
 
     static boolean isPortableSourceName(String name) {

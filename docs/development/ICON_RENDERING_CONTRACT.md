@@ -3,6 +3,8 @@
 状态：**ARCHITECTURE_FROZEN / IMPLEMENTATION_COMPLETE / RUNTIME_MATRIX_NOT_PASSED**
 冻结日期：2026-08-21
 
+2026-10-24 圆框限定补充：DefaultIconCircleRenderer V9 对符合高覆盖、连续实心圆角底板特征的输入，仅在私有副本延展背景，保留完整前景矩阵；圆形、孔洞及不规则图案不强行当作底板。Adaptive 背景按平台 extra inset 展开，前景与阴影合同不变，API26引用仍受版本门控。Android9原生74检查及真实OPPO来源重放通过，OPPO整机/跨ROM矩阵未验收；详见 DEVELOPMENT_LOG.md 同日记录，不改变本文运行时矩阵未通过状态。
+
 本文档是普通 Application 图标与 Weather/Calendar ActiveIcon 的唯一施工合同。其他文档出现冲突时，以原版真机证据和本文档为准。当前四层实现已经收敛且静态审计/构建通过，但固定运行时矩阵尚未完成；禁止记录 `FINAL`、`PASS` 或“所有机型一致”。
 
 ## 1. 一致性的定义
@@ -33,6 +35,8 @@ DEFAULT、IMPROVED、PACK、CUSTOM、RESOURCE 以及 Weather/Calendar 必须共�
 - `RESOURCE`
 
 必须按应用实际解析结果分类，不能把全局选择等同于该应用实际命中。正式 managed source 暂时不可用时回退 `DEFAULT`。
+
+2026-10-19 用户确认：开启默认圆框后，IMPROVED/PACK/CUSTOM/RESOURCE未匹配而回退应用原图时，也应按实际DEFAULT来源应用圆框；成功匹配的图案保持原样，来源选择不被回退改写。此前为透明模块按所选来源禁止回退圆框的旧策略不再作为本项通用规则。
 
 ### 2.2 IconVisualMetrics
 

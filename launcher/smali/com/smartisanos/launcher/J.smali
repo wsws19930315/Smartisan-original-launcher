@@ -4895,6 +4895,8 @@
 
     invoke-static {v2}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
+    invoke-static {}, Lcom/smartisanos/launcher/theme/MaintainedLauncherSettingsHost;->onLauncherPageReady()V
+
     .line 22
     invoke-virtual {p0}, Lcom/smartisanos/launcher/J;->Wa()Z
 

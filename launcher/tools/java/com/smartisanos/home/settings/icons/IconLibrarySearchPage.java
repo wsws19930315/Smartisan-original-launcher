@@ -96,6 +96,7 @@ public final class IconLibrarySearchPage extends LinearLayout {
     private volatile IconLibraryCatalog directoryCatalog;
     private boolean indexPreparing;
     private String appliedQuery = "";
+    private boolean queryPending;
     private final int[] onlineRanks = new int[IconLibrarySearchIndex.RANKS];
 
     private int oldSoftInputMode;
@@ -216,8 +217,8 @@ public final class IconLibrarySearchPage extends LinearLayout {
     private void saveResultState() {
         if (!showingResults || !packsReady || !directoryReady || !IconPackManager.isSearchSnapshotCurrent(packed)
                 || !appliedQuery.equals(search.getEditText().getText().toString())) return;
-        IconLibraryCatalog catalog = IconLibraryCatalog.peek();
-        if (catalog == null) return;
+        IconLibraryCatalog catalog = directoryCatalog;
+        if (catalog == null || catalog != IconLibraryCatalog.peek()) return;
         ResultState state = new ResultState();
         state.revision=catalog.revision; state.query=appliedQuery; state.rows=adapter.rows; state.packs=packed;
         state.first=grid.getFirstVisiblePosition(); View first=grid.getChildAt(0);state.top=first==null?0:first.getTop();
@@ -227,7 +228,7 @@ public final class IconLibrarySearchPage extends LinearLayout {
     }
     private boolean restoreResultState(IconLibraryCatalog catalog) {
         ResultState state=navigation.results.get(stateKey(search.getEditText().getText().toString()));
-        if(state==null || !state.revision.equals(catalog.revision) || !IconPackManager.isSearchSnapshotCurrent(state.packs)) return false;
+        if(catalog!=IconLibraryCatalog.peek() || state==null || !state.revision.equals(catalog.revision) || !IconPackManager.isSearchSnapshotCurrent(state.packs)) return false;
         queryCancel=new android.os.CancellationSignal();
         setRows(state.rows,state.packs,state.query);
         if(state.page!=null) packedPages.put(state.pageOffset,state.page);
@@ -237,6 +238,7 @@ public final class IconLibrarySearchPage extends LinearLayout {
     }
     private void showCategories() {
         showingResults = false;
+        queryPending = false;
         resultCount.setVisibility(GONE);
         message.setText("图标分类"); categories.setVisibility(VISIBLE); grid.setVisibility(GONE);
         releaseBindings(); packed = null; packedPages.evictAll(); loadingPages.clear(); adapter.rows = Collections.emptyList(); adapter.notifyDataSetChanged();
@@ -265,6 +267,7 @@ public final class IconLibrarySearchPage extends LinearLayout {
     }
     private void initializeDirectory() {
         final long request=++directoryRequest;
+        final long packGeneration=IconPackManager.searchGeneration();
         ++generation;
         final boolean visible=directoryReady;
         packsReady=false;
@@ -293,11 +296,16 @@ public final class IconLibrarySearchPage extends LinearLayout {
             try {
                 final IconLibraryCatalog catalog=IconLibraryCatalog.load(activity.getApplicationContext());
                 main.post(new Runnable() {public void run() {
-                    if(active() && directoryRequest==request && owner==session) acceptCatalog(catalog);
+                    if(!active() || directoryRequest!=request || owner!=session) return;
+                    if(catalog!=IconLibraryCatalog.peek()) {initializeDirectory();return;}
+                    acceptCatalog(catalog);
                 }});
                 IconPackManager.prepareSearchIndex(activity.getApplicationContext(),owner,catalog);
                 main.post(new Runnable() {public void run() {
                     if(!active() || directoryRequest!=request || owner!=session) return;
+                    if(catalog!=IconLibraryCatalog.peek() || !IconPackManager.isSearchIndexReady(catalog)) {
+                        initializeDirectory();return;
+                    }
                     indexPreparing=false;
                     packsReady=true;directoryGeneration=IconPackManager.searchGeneration();
                     if(IconPackManager.searchFailureCount()>0)
@@ -309,6 +317,7 @@ public final class IconLibrarySearchPage extends LinearLayout {
                 android.util.Log.w("SmartisanPerf","ICON_DIRECTORY_LOAD_FAILED",error);
                 main.post(new Runnable() {public void run() {
                     if(!active() || directoryRequest!=request || owner!=session) return;
+                    if(packGeneration!=IconPackManager.searchGeneration()) {initializeDirectory();return;}
                     indexPreparing=false;
                     if(!directoryReady) showDirectoryError();
                     else Toast.makeText(activity,"部分图标包暂时无法读取",Toast.LENGTH_SHORT).show();
@@ -328,6 +337,7 @@ public final class IconLibrarySearchPage extends LinearLayout {
     }
     private void setRows(List<IconLibrarySearchIndex.Entry> rows,IconPackManager.SearchSnapshot packs,String query) {
         releaseBindings();packed=packs;packedPages.evictAll();loadingPages.clear();adapter.rows=rows;appliedQuery=query;
+        queryPending = false;
         java.util.Arrays.fill(onlineRanks,0);
         IconLibrarySearchIndex.Query normalized=new IconLibrarySearchIndex.Query(query);
         for(IconLibrarySearchIndex.Entry entry:rows) {
@@ -343,6 +353,7 @@ public final class IconLibrarySearchPage extends LinearLayout {
     }
     private void showDirectoryError() {
         loading.progress.setVisibility(GONE); loading.message.setText("加载失败，点击重试");
+        loading.message.setVisibility(VISIBLE);
         loading.root.setOnClickListener(new OnClickListener() { public void onClick(View view) { initializeDirectory(); }});
     }
     private void scheduleFilter(boolean browse, boolean debounce) {
@@ -363,6 +374,7 @@ public final class IconLibrarySearchPage extends LinearLayout {
         final String filterCategory = category;
         final IconLibraryCatalog catalog = directoryCatalog;
         if(catalog==null) return;
+        queryPending = true;
         showingResults = true;
         categories.setVisibility(GONE); grid.setVisibility(VISIBLE);
         message.setText("搜索结果");
@@ -387,7 +399,9 @@ public final class IconLibrarySearchPage extends LinearLayout {
                     } catch (Exception error) {
                         android.util.Log.w("SmartisanPerf", "ICON_LIBRARY_SEARCH_FAILED", error);
                         main.post(new Runnable() { public void run() {
-                            if (active() && generation == token) message.setText("图标目录暂时无法读取");
+                            if (!active() || generation != token) return;
+                            if(catalog!=IconLibraryCatalog.peek()) {initializeDirectory();return;}
+                            message.setText("图标目录暂时无法读取");
                         }});
                         return;
                     }
@@ -395,7 +409,9 @@ public final class IconLibrarySearchPage extends LinearLayout {
                     final long duration = android.os.SystemClock.uptimeMillis() - started;
                     main.post(new Runnable() { public void run() {
                         if (!active() || generation != token) return;
-                        if(packsReady && !IconPackManager.isSearchIndexReady(catalog) && !indexPreparing) {
+                        if(catalog!=IconLibraryCatalog.peek()
+                                || (packResult!=null && !IconPackManager.isSearchSnapshotCurrent(packResult))
+                                || (packsReady && !IconPackManager.isSearchIndexReady(catalog) && !indexPreparing)) {
                             initializeDirectory();return;
                         }
                         boolean preserve = appliedQuery.equals(query);
@@ -613,6 +629,9 @@ public final class IconLibrarySearchPage extends LinearLayout {
                 final List<IconLibrarySearchIndex.Entry> rows=IconPackManager.readSearchPage(activity.getApplicationContext(),snapshot,offset,60,cancel);
                 main.post(new Runnable() { public void run() {
                     if(!active() || token!=generation) return;
+                    if(directoryCatalog!=IconLibraryCatalog.peek() || !IconPackManager.isSearchSnapshotCurrent(snapshot)) {
+                        initializeDirectory();return;
+                    }
                     loadingPages.remove(offset);packedPages.put(offset,rows);bindVisible();
                 }});
             } catch(Exception error) { main.post(new Runnable() { public void run() {
@@ -631,8 +650,11 @@ public final class IconLibrarySearchPage extends LinearLayout {
     public IconPreviewRepository.RequestSession resume() {
         if(!closed && paused) {
             paused=false;session=repository.openSession("ICON_LIBRARY");queryCancel=new android.os.CancellationSignal();
-            if(directoryReady && packsReady && directoryGeneration==IconPackManager.searchGeneration()) {
-                loadingPages.clear();bindVisible();
+            if(directoryReady && packsReady && directoryGeneration==IconPackManager.searchGeneration()
+                    && directoryCatalog==IconLibraryCatalog.peek() && IconPackManager.isSearchIndexReady(directoryCatalog)) {
+                loadingPages.clear();
+                if(queryPending) scheduleFilter(true,false);
+                else bindVisible();
             } else initializeDirectory();
         }
         return session;

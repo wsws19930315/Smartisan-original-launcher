@@ -24,6 +24,9 @@
 .method public run()V
     .locals 0
 
+    const-string p0, "LAUNCH_SCENE_COMPLETION_DISPATCH"
+    invoke-static {p0}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+
     const/16 p0, 0xc
 
     .line 1

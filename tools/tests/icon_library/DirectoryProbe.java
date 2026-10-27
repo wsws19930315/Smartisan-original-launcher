@@ -171,6 +171,16 @@ public final class DirectoryProbe {
         begin=android.os.SystemClock.uptimeMillis();IconPackManager.prepareSearchIndex(context,session,catalog);
         long diskWarm=android.os.SystemClock.uptimeMillis()-begin;
         check(new File(context.getCacheDir(),IconPackManager.SEARCH_DB_NAME).lastModified()==modified,"disk index reused after memory cache loss");
+        IconLibraryCatalog.invalidateInstalledLabels();
+        check(!IconPackManager.isSearchIndexReady(catalog),"invalidated catalog cannot remain index-ready");
+        try {IconPackManager.prepareSearchIndex(context,session,catalog);throw new AssertionError("stale catalog accepted by index builder");}
+        catch(android.os.OperationCanceledException expected){checks++;}
+        IconLibraryCatalog replacement=IconLibraryCatalog.load(context);
+        check(replacement!=catalog,"fresh publication has distinct identity");
+        // The optional fixture branch above mutates the old revision deliberately.
+        check(!IconPackManager.isSearchIndexReady(catalog),"old identity remains rejected after replacement");
+        IconPackManager.prepareSearchIndex(context,session,replacement);
+        check(IconPackManager.isSearchIndexReady(replacement),"current catalog can prepare and use pack directory");
         Field generation=IconPackManager.class.getDeclaredField("sPackGeneration");generation.setAccessible(true);generation.setLong(null,generation.getLong(null)+1);
         try{IconPackManager.readSearchPage(context,real,0,60,new CancellationSignal());if(real.size()>0)throw new AssertionError("stale generation accepted");}
         catch(android.os.OperationCanceledException expected){checks++;}

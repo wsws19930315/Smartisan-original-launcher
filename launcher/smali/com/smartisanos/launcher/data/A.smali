@@ -641,6 +641,51 @@
     return-void
 .end method
 
+
+# Keep original placement/duplicate/ID handling, but amortize per-item disk commits.
+.method private static placeStartupItems(Ljava/util/List;Ljava/util/List;)V
+    .locals 3
+
+    invoke-interface {p0}, Ljava/util/List;->isEmpty()Z
+    move-result v0
+    if-eqz v0, :batch_start
+    invoke-interface {p1}, Ljava/util/List;->isEmpty()Z
+    move-result v0
+    if-eqz v0, :batch_start
+    return-void
+
+    :batch_start
+    invoke-static {}, Lcom/smartisanos/launcher/data/C;->getInstance()Lcom/smartisanos/launcher/data/C;
+    move-result-object v0
+    invoke-virtual {v0}, Lcom/smartisanos/launcher/data/C;->getWritableDatabase()Landroid/database/sqlite/SQLiteDatabase;
+    move-result-object v0
+    new-instance v2, Lcom/smartisanos/launcher/model/LauncherModelRepository$StartupPlacementCommit;
+    invoke-direct {v2}, Lcom/smartisanos/launcher/model/LauncherModelRepository$StartupPlacementCommit;-><init>()V
+    invoke-virtual {v0, v2}, Landroid/database/sqlite/SQLiteDatabase;->beginTransactionWithListener(Landroid/database/sqlite/SQLiteTransactionListener;)V
+
+    :batch_try_start
+    const-string v1, "LAUNCH_DB_PLACEMENT_BATCH_BEGIN"
+    invoke-static {v1}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+    invoke-static {p0}, Lcom/smartisanos/launcher/data/A;->H(Ljava/util/List;)V
+    invoke-static {p1}, Lcom/smartisanos/launcher/data/A;->G(Ljava/util/List;)V
+    invoke-virtual {v0}, Landroid/database/sqlite/SQLiteDatabase;->setTransactionSuccessful()V
+    :batch_try_end
+    .catchall {:batch_try_start .. :batch_try_end} :batch_failed
+
+    invoke-virtual {v0}, Landroid/database/sqlite/SQLiteDatabase;->endTransaction()V
+    invoke-virtual {v2}, Lcom/smartisanos/launcher/model/LauncherModelRepository$StartupPlacementCommit;->requireCommitted()V
+    const-string v1, "LAUNCH_DB_PLACEMENT_BATCH_END"
+    invoke-static {v1}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+    return-void
+
+    :batch_failed
+    move-exception v1
+    invoke-virtual {v0}, Landroid/database/sqlite/SQLiteDatabase;->endTransaction()V
+    # Startup retries reload the database; do not expose rolled-back IDs.
+    invoke-static {}, Lcom/smartisanos/launcher/Aa;->mc()V
+    throw v1
+.end method
+
 .method private static F(Ljava/util/List;)V
     .locals 6
 
@@ -4879,7 +4924,7 @@
 .end method
 
 .method private static a(Landroid/content/Context;Ljava/util/List;Ljava/util/List;Z)V
-    .locals 9
+    .locals 10
 
     if-eqz p1, :cond_8
 
@@ -5069,7 +5114,15 @@
 
     .line 61
     :cond_6
+
+    const-string v9, "LAUNCH_DB_ORDER_BEGIN"
+
+    invoke-static/range {v9 .. v9}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
     invoke-static {v3}, Lcom/smartisanos/launcher/data/A;->F(Ljava/util/List;)V
+
+    const-string v9, "LAUNCH_DB_ORDER_END"
+
+    invoke-static/range {v9 .. v9}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     if-eqz p3, :cond_7
 
@@ -5084,10 +5137,8 @@
 
     .line 64
     :goto_2
-    invoke-static {v2}, Lcom/smartisanos/launcher/data/A;->H(Ljava/util/List;)V
 
-    .line 65
-    invoke-static {v0}, Lcom/smartisanos/launcher/data/A;->G(Ljava/util/List;)V
+    invoke-static {v2, v0}, Lcom/smartisanos/launcher/data/A;->placeStartupItems(Ljava/util/List;Ljava/util/List;)V
 
     :cond_8
     :goto_3
@@ -10598,7 +10649,12 @@
 .end method
 
 .method private static e(Landroid/content/Context;Z)V
-    .locals 27
+    .locals 28
+
+
+    const-string v27, "LAUNCH_DB_BEGIN"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     move-object/from16 v0, p0
 
@@ -10639,9 +10695,18 @@
     invoke-static {}, Lcom/smartisanos/launcher/Aa;->mc()V
 
     .line 5
+
+    const-string v27, "LAUNCH_DB_PACKAGES_BEGIN"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+
     invoke-static/range {p0 .. p0}, Lcom/smartisanos/launcher/Aa;->m(Landroid/content/Context;)Ljava/util/Map;
 
     move-result-object v4
+
+    const-string v27, "LAUNCH_DB_PACKAGES_END"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     .line 6
     invoke-static/range {p0 .. p0}, Lcom/smartisanos/launcher/data/N;->S(Landroid/content/Context;)Z
@@ -10671,7 +10736,16 @@
     if-eqz v5, :cond_2
 
     .line 8
+
+    const-string v27, "LAUNCH_DB_FIRST_LAYOUT_BEGIN"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+
     invoke-static {v0, v4}, Lcom/smartisanos/launcher/data/A;->a(Landroid/content/Context;Ljava/util/Map;)V
+
+    const-string v27, "LAUNCH_DB_FIRST_LAYOUT_END"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     .line 9
     sget-boolean v7, Lcom/smartisanos/launcher/va;->DBG:Z
@@ -10711,7 +10785,16 @@
     invoke-static {}, Lcom/smartisanos/launcher/data/A;->Rw()V
 
     .line 15
+
+    const-string v27, "LAUNCH_DB_RECONCILE_BEGIN"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+
     invoke-static {v4}, Lcom/smartisanos/launcher/data/A;->g(Ljava/util/Map;)V
+
+    const-string v27, "LAUNCH_DB_RECONCILE_END"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     .line 16
     invoke-static {}, Lcom/smartisanos/launcher/data/A;->Pw()V
@@ -11430,7 +11513,16 @@
     move-object/from16 v25, v13
 
     .line 67
+
+    const-string v27, "LAUNCH_DB_ICON_UPDATE_BEGIN"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+
     invoke-static {v6, v0}, Lcom/smartisanos/launcher/data/A;->a(Ljava/util/Map;Landroid/content/Context;)V
+
+    const-string v27, "LAUNCH_DB_ICON_UPDATE_END"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     .line 68
     new-instance v1, Ljava/util/ArrayList;
@@ -11526,7 +11618,16 @@
     invoke-static/range {p0 .. p0}, Lcom/smartisanos/launcher/data/A;->x(Landroid/content/Context;)Z
 
     .line 81
+
+    const-string v27, "LAUNCH_DB_LAYOUT_CHECK_BEGIN"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+
     invoke-static {}, Lcom/smartisanos/launcher/data/A;->Tw()V
+
+    const-string v27, "LAUNCH_DB_LAYOUT_CHECK_END"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     .line 82
     invoke-static {}, Lcom/smartisanos/launcher/Aa;->mc()V
@@ -11689,7 +11790,16 @@
 
     .line 94
     :cond_24
+
+    const-string v27, "LAUNCH_DB_TITLES_BEGIN"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+
     invoke-static/range {p0 .. p0}, Lcom/smartisanos/launcher/Aa;->n(Landroid/content/Context;)V
+
+    const-string v27, "LAUNCH_DB_TITLES_END"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     :cond_25
     if-eqz v5, :cond_26
@@ -11705,7 +11815,16 @@
 
     .line 95
     :goto_f
+
+    const-string v27, "LAUNCH_DB_ICON_LOAD_BEGIN"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+
     invoke-static {v0, v8, v9, v1}, Lcom/smartisanos/launcher/data/A;->a(Landroid/content/Context;Ljava/util/List;Ljava/util/List;Z)V
+
+    const-string v27, "LAUNCH_DB_ICON_LOAD_END"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     .line 96
     invoke-static/range {p0 .. p0}, Lcom/smartisanos/launcher/data/N;->D(Landroid/content/Context;)Z
@@ -11758,7 +11877,16 @@
 
     move-result-object v3
 
+
+    const-string v27, "LAUNCH_DB_ICON_DB_BEGIN"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
+
     invoke-static {v0, v3, v5}, Lcom/smartisanos/launcher/data/a/h;->a(Landroid/content/Context;Ljava/util/Map;Z)V
+
+    const-string v27, "LAUNCH_DB_ICON_DB_END"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     if-nez v5, :cond_2c
 
@@ -12010,6 +12138,10 @@
     move-result-object v1
 
     invoke-virtual {v0, v1}, Lcom/smartisanos/launcher/va;->u(Ljava/lang/String;)V
+
+    const-string v27, "LAUNCH_DB_END"
+
+    invoke-static/range {v27 .. v27}, Lcom/smartisanos/launcher/diagnostics/LauncherStartupDiagnostics;->mark(Ljava/lang/String;)V
 
     return-void
 .end method

@@ -18,6 +18,19 @@ import java.util.Set;
 
 /** Only model-facing business facade. Original Aa/database code stays below this boundary. */
 public final class LauncherModelRepository {
+    /** A legacy nested TransactionTask may roll back without throwing to its caller. */
+    public static final class StartupPlacementCommit
+            implements android.database.sqlite.SQLiteTransactionListener {
+        private boolean committed;
+        public void onBegin() { committed = false; }
+        public void onCommit() { committed = true; }
+        public void onRollback() { committed = false; }
+        public void requireCommitted() {
+            if (!committed) {
+                throw new IllegalStateException("Startup placement transaction rolled back");
+            }
+        }
+    }
     private static final String TAG = "LauncherModelRepository";
     private final Context app;
     public LauncherModelRepository(Context context) { app = context == null ? null : context.getApplicationContext(); }
